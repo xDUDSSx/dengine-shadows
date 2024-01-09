@@ -13,7 +13,7 @@ namespace GLUtils
 #define CHECK_GL_ERROR()                                                                                                         \
 	do                                                                                                                           \
 	{                                                                                                                            \
-		GLUtils::checkGLError(__FUNCTION__, __LINE__);                                                                                    \
+		GLUtils::checkGLError(__FUNCTION__, __LINE__);                                                                           \
 	} while (0)
 
 void checkGLError(const char* where, int line);
@@ -70,5 +70,15 @@ GLuint createProgram(const GLuint* shaders);
  * \return opengl shader program id or 0 on failure
  */
 GLuint createProgram(const std::vector<GLuint>& shaderList);
+
+namespace Debug
+{
+/// returns human readable representation of debug source src
+const char* sourceToString(GLenum src);
+/// returns human readable representation of debug type
+const char* typeToString(GLenum type);
+/// returns human readable representation of debug severity
+const char* severityToString(GLenum severity);
+} // namespace Debug
 
 } // namespace GLUtils

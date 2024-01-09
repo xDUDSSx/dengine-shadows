@@ -59,6 +59,8 @@ set(IMGUI_SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui/imgui_tables.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui/imgui_widgets.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui/misc/cpp/imgui_stdlib.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui/backends/imgui_impl_glfw.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui/backends/imgui_impl_opengl3.cpp
 )
 list(APPEND DENGINE_SOURCE "${IMGUI_SOURCE}")
 include_directories(Dengine libs/imgui)
