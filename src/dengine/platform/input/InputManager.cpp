@@ -7,7 +7,7 @@
 #include "dengine/platform/Common.h"
 #include "dengine/platform/Logger.h"
 
-#include "imgui.h"
+#include "dengine/platform/CommonImGui.h"
 
 #define IM_MOUSE_KEYS_COUNT 3
 

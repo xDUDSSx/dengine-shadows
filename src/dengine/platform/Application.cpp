@@ -1,12 +1,15 @@
 #include "Application.h"
 
-#include "imgui.h"
+#include "dengine/platform/CommonImGui.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "backends/imgui_impl_glfw.h"
 
 #include "dengine/platform/Logger.h"
 #include "dengine/platform/input/InputManager.h"
 #include "dengine/util/GLUtils.h"
+
+namespace Dengine
+{
 
 void glfwErrorCallback(int error, const char* description)
 {
@@ -26,29 +29,41 @@ void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int 
 }
 
 void GLAPIENTRY openGlDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
-                                    const void* userParam)
+                                    const void* userParam){
+    LOG_ERROR("[OGL DEBUG] [{}] [{}, {}]: {}", GLUtils::Debug::severityToString(severity), GLUtils::Debug::sourceToString(source),
+              GLUtils::Debug::typeToString(type), message)}
+
+Application::Application(const char* title)
+    : m_title(title)
 {
-	LOG_ERROR("[OGL DEBUG] [{}] [{}, {}]: {}", GLUtils::Debug::severityToString(severity), GLUtils::Debug::sourceToString(source), GLUtils::Debug::typeToString(type), message)
 }
 
 int Application::run(int argc, char** argv)
 {
-	init();
+	init(m_title.c_str());
 
 	while (!glfwWindowShouldClose(m_window))
 	{
+		glfwGetFramebufferSize(m_window, &m_windowSize.x, &m_windowSize.y);
+
 		glfwPollEvents();
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		ImGui::ShowDemoWindow(); // Show demo window! :)
+
+		InputManager::beginFrame();
+
+		// Logic update
+		update(ImGui::GetIO().DeltaTime);
 
 		// Rendering
 		display();
 
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+		InputManager::endFrame();
 
 		glfwSwapBuffers(m_window);
 	}
@@ -65,7 +80,7 @@ int Application::run(int argc, char** argv)
 	return 0;
 }
 
-int Application::init()
+int Application::init(const char* title)
 {
 	Logger::init();
 
@@ -82,7 +97,7 @@ int Application::init()
 	glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 	glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, m_debug ? GLFW_TRUE : GLFW_FALSE);
 
-	m_window = glfwCreateWindow(640, 480, "Dengine", nullptr, nullptr);
+	m_window = glfwCreateWindow(640, 480, title, nullptr, nullptr);
 	if (!m_window)
 	{
 		LOG_ERROR("Failed to create GLFW window!");
@@ -106,6 +121,7 @@ int Application::init()
 	gladLoadGL(glfwGetProcAddress);
 	glfwSwapInterval(1);
 
+	LOG_INFO("==== OpenGL details ====");
 	LOG_INFO("VENDOR:   {}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
 	LOG_INFO("RENDERER: {}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
 	LOG_INFO("VERSION:  {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
@@ -114,10 +130,17 @@ int Application::init()
 	// Enable OGL debug
 	if (m_debug && glfwExtensionSupported("GL_ARB_debug_output"))
 	{
+		LOG_INFO("DEBUG:    Yes")
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(openGlDebugCallback, nullptr);
 		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
 	}
+	else
+	{
+		LOG_INFO("DEBUG:    No")
+	}
+
+	LOG_INFO("========================");
 
 	// Init GUI
 	IMGUI_CHECKVERSION();
@@ -129,10 +152,24 @@ int Application::init()
 
 	ImGui::GetStyle().ScaleAllSizes(m_UIScaleFactor);
 	ImGui::GetIO().FontGlobalScale = m_UIScaleFactor;
+
+	// Setup basic keybinds
+	InputManager::bindKey("scroll", Keys::mouseScrlUp, {}, 1.0f);
+	InputManager::bindKey("scroll", Keys::mouseScrlDown, {}, -1.0f);
+	InputManager::bindKey("pan", Keys::mouseMiddle);
+	InputManager::bindKey("rotate", Keys::mouseRight);
+
+	onInit();
 }
 
 void Application::display()
 {
-	glClearColor(0.65f, 0.81f, 0.60f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	onDisplay();
 }
+
+void Application::update(float dt)
+{
+	onUpdate(dt);
+}
+
+} // namespace Dengine

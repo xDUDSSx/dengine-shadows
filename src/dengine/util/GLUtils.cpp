@@ -140,7 +140,7 @@ GLuint createShaderFromFile(GLenum eShaderType, const std::string& filename)
 	}
 	else
 	{
-		LOG_INFO("Loading shader : {}", filename);
+		LOG_INFO("Loading shader from file: {}", filename);
 	}
 
 	fseek(f, 0, SEEK_END);

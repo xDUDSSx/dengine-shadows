@@ -1,11 +1,11 @@
 #include <iostream>
 
+#include "app/SimpleApplication.h"
 
-#include "dengine/platform/Application.h"
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-	Application app;
+	SimpleApplication app;
+	Dengine::g_activeApplication = nullptr;
 	app.run(argc, argv);
 	return 0;
 }

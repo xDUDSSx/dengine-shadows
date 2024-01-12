@@ -8,6 +8,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 # Create project target
 add_executable(Dengine)
 
+# Make default build type Release
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif ()
+
+# Organize files into groups in Visual Studio based on directories (ideal goal)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
+if (MSVC)
+    # Enable multi-processor compilation for MSVC.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /MP")
+    message(STATUS "MSVC: CMAKE_CXX_FLAGS = ${CMAKE_CXX_FLAGS}")
+    message(STATUS "MSVC: CMAKE_C_FLAGS = ${CMAKE_C_FLAGS}")
+
+    set(CMAKE_SHARED_LINKER_FLAGS /MANIFEST:NO)
+endif ()
+
+# Set VS_DEBUGGER_WORKING_DIRECTORY
+set_target_properties(
+        ${PROJECT_NAME} PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+# NOTE: In other IDE's, working directory has to be set manually to the project root dir
+
 # Setup output directories
 set(DENGINE_OUT_DIR "${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}/")
 
@@ -97,6 +123,13 @@ set(ASSIMP_BUILD_ZLIB ON)
 include_directories(libs/magic_enum/include/magic_enum)
 
 # Compile and link
+# Set compiler warnings
+if (MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W3 -D_CRT_SECURE_NO_WARNINGS)
+else ()
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
+endif ()
+
 #add_executable(Dengine src/main.cpp ${DENGINE_SOURCE})
 target_sources(Dengine PUBLIC src/main.cpp ${DENGINE_SOURCE})
 target_link_libraries(Dengine
@@ -106,8 +139,11 @@ target_link_libraries(Dengine
         ImGuizmo
 )
 
-# Debug stuff
-#message("Debug list:")
-#foreach(file_path ${DENGINE_SOURCE})
-#    message(${file_path})
-#endforeach()
+# Compiler flags overview
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "CXX flags: ${CMAKE_CXX_FLAGS}")
+message(STATUS "CXX debug flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+message(STATUS "CXX release with deb info flags: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+message(STATUS "CXX release flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+get_target_property(MAIN_CFLAGS ${PROJECT_NAME} COMPILE_OPTIONS)
+message(STATUS "Target compiler flags are: ${MAIN_CFLAGS}\n")
