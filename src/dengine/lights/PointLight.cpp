@@ -1,9 +1,9 @@
 
 #include "PointLight.h"
 
-using namespace Vp;
+using namespace Dg;
 
-#include "Viewport/shader/PhongShader.h"
+#include "dengine/shader/PhongShader.h"
 
 void PointLight::setUniforms(const PhongShader& shader, int index) const
 {

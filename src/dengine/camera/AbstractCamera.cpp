@@ -7,9 +7,9 @@
 #include "dengine/platform/Common.h"
 
 #include "dengine/util/GfxUtils.h"
-#include "Viewport/scene/Scene.h"
+#include "dengine/scene/Scene.h"
 
-using namespace Vp;
+using namespace Dg;
 using namespace std::chrono;
 
 void AbstractCamera::size(int width, int height)

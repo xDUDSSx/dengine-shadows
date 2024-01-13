@@ -2,7 +2,7 @@
 
 #include "AbstractOrbitCamera.h"
 
-namespace Vp
+namespace Dg
 {
 /**
  * Camera turning around a point using an azimuth and elevation angle.
@@ -51,4 +51,4 @@ protected:
 	virtual void mouseDrag(float dx, float dy, bool rotate, bool pan);
 };
 
-} // namespace Vp
+} // namespace Dg

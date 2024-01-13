@@ -1,9 +1,9 @@
 
 #include "SpotLight.h"
 
-using namespace Vp;
+using namespace Dg;
 
-#include "Viewport/shader/PhongShader.h"
+#include "dengine/shader/PhongShader.h"
 
 void SpotLight::setUniforms(const PhongShader& shader, int index) const
 {

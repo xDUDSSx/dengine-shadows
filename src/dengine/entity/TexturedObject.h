@@ -2,7 +2,9 @@
 
 #include "GameObject.h"
 
-namespace Vp
+#include "dengine/shader/Shaders.h"
+
+namespace Dg
 {
 class PhongShader;
 
@@ -12,8 +14,8 @@ public:
 	glm::vec3 m_tint{1.0f};
 	float m_tintStrength{1.0f};
 
-	TexturedObject(Core::Mesh* mesh, PhongShader* shader);
+	explicit TexturedObject(Core::Mesh* mesh, PhongShader* shader = Dg::Shaders::instance().m_phongShader.get());
 
 	void render(Shader* shader, glm::mat4 view, glm::mat4 projection, bool silhouette) override;
 };
-} // namespace Vp
+} // namespace Dg

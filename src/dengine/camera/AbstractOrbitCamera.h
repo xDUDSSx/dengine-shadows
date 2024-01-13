@@ -2,7 +2,7 @@
 
 #include "AbstractCamera.h"
 
-namespace Vp
+namespace Dg
 {
 /**
  * Abstract camera that turns around a point (pivot) at a certain distance (radius).
@@ -23,4 +23,4 @@ public:
 	float getRadius() const;
 };
 
-} // namespace Vp
+} // namespace Dg

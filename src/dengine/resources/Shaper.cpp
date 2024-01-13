@@ -5,7 +5,7 @@
 #include "dengine/resources/ResourceManager.h"
 #include "dengine/util/Color.h"
 
-using namespace Vp;
+using namespace Dg;
 
 std::string Shaper::xyzAxes;
 std::string Shaper::unitLineCube;

@@ -1,7 +1,7 @@
 
 #include "Entity.h"
 
-using namespace Vp;
+using namespace Dg;
 
 Entity::Entity()
 {

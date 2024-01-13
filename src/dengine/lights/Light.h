@@ -2,7 +2,7 @@
 
 #include "glm/glm.hpp"
 
-namespace Vp
+namespace Dg
 {
 class PhongShader;
 
@@ -17,4 +17,4 @@ public:
 	float intensity{0.6f};
 	virtual void setUniforms(const PhongShader& shader, int index) const = 0;
 };
-} // namespace Vp
+} // namespace Dg

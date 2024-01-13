@@ -3,7 +3,7 @@
 
 #include "dengine/platform/Logger.h"
 
-using namespace Vp;
+using namespace Dg;
 
 DepthAttachment::DepthAttachment(bool stencil, GLsizei width, GLsizei height, bool useRenderbuffer)
     : m_stencil(stencil), m_width(width), m_height(height)

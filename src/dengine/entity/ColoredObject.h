@@ -2,7 +2,7 @@
 
 #include "GameObject.h"
 
-namespace Vp
+namespace Dg
 {
 class ColorShader;
 
@@ -20,4 +20,4 @@ public:
 	void setColor(const glm::vec3* color);
 	void setColor(const glm::vec3& color);
 };
-} // namespace Vp
+} // namespace Dg

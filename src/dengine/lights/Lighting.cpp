@@ -5,9 +5,9 @@
 #include "dengine/lights/SpotLight.h"
 #include "dengine/lights/SunLight.h"
 
-#include "Viewport/shader/PhongShader.h"
+#include "dengine/shader/PhongShader.h"
 
-using namespace Vp;
+using namespace Dg;
 
 void Lighting::setUniforms(const PhongShader& shader) const
 {

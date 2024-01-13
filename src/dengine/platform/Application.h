@@ -17,6 +17,14 @@ namespace Dengine
 class Application;
 using App = Application;
 
+enum DebugLevel
+{
+	NOTICE = 0,
+	LOW,
+	MEDIUM,
+	HIGH,
+};
+
 class Application
 {
   public:
@@ -25,6 +33,8 @@ class Application
 #else
 	bool m_debug{false};
 #endif
+	DebugLevel m_debugLevel{MEDIUM};
+
 	std::string m_title;
 	GLFWwindow* m_window{nullptr};
 	glm::ivec2 m_windowSize{0};

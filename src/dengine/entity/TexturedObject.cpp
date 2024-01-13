@@ -3,11 +3,11 @@
 
 #include "dengine/util/HSLColor.h"
 
-#include "Viewport/shader/ColorShader.h"
-#include "Viewport/shader/PhongShader.h"
-#include "Viewport/shader/Shaders.h"
+#include "dengine/shader/ColorShader.h"
+#include "dengine/shader/PhongShader.h"
+#include "dengine/shader/Shaders.h"
 
-using namespace Vp;
+using namespace Dg;
 
 TexturedObject::TexturedObject(Core::Mesh* mesh, PhongShader* shader) : GameObject(mesh, shader)
 {

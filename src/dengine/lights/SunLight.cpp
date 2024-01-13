@@ -1,9 +1,9 @@
 
 #include "SunLight.h"
 
-using namespace Vp;
+using namespace Dg;
 
-#include "Viewport/shader/PhongShader.h"
+#include "dengine/shader/PhongShader.h"
 
 void SunLight::setUniforms(const PhongShader& shader, int index) const
 {

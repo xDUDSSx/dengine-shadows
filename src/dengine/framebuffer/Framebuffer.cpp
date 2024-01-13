@@ -3,7 +3,7 @@
 
 #include "dengine/platform/Logger.h"
 
-using namespace Vp;
+using namespace Dg;
 
 #define FB_DEBUG false
 #define FB_DEBUG_VERBOSE false
@@ -481,7 +481,7 @@ void Framebuffer::removeAllColorAttachments()
 
 void Framebuffer::addColorAttachment(ColorAttachment colorAttachment)
 {
-	colorAttachment.m_index = m_colorAttachments.size();
+	colorAttachment.m_index = static_cast<unsigned int>(m_colorAttachments.size());
 	// All FBO attachments must have the same sample count
 	colorAttachment.m_multisampled = m_multisample;
 	colorAttachment.m_samples = m_samples;
@@ -528,7 +528,7 @@ void Framebuffer::setDrawBuffers()
 	}
 	if (!colorBuffers.empty())
 	{
-		glDrawBuffers(colorBuffers.size(), &colorBuffers[0]);
+		glDrawBuffers(static_cast<GLsizei>(colorBuffers.size()), &colorBuffers[0]);
 	}
 }
 
@@ -549,7 +549,7 @@ void Framebuffer::setDrawBuffers(std::vector<unsigned int> indices)
 	}
 	if (!colorBuffers.empty())
 	{
-		glDrawBuffers(colorBuffers.size(), &colorBuffers[0]);
+		glDrawBuffers(static_cast<GLsizei>(colorBuffers.size()), &colorBuffers[0]);
 	}
 }
 

@@ -2,7 +2,7 @@
 
 #include "dengine/platform/DGL.h"
 
-namespace Vp
+namespace Dg
 {
 /**
  * Color attachment using a 2D Texture
@@ -51,4 +51,4 @@ public:
 	void dispose();
 };
 
-} // namespace Vp
+} // namespace Dg

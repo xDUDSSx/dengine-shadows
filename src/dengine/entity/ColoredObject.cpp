@@ -1,9 +1,9 @@
 
 #include "ColoredObject.h"
 
-using namespace Vp;
+using namespace Dg;
 
-#include "Viewport/shader/ColorShader.h"
+#include "dengine/shader/ColorShader.h"
 
 ColoredObject::ColoredObject(Core::Mesh* mesh, ColorShader* shader) : GameObject(mesh, shader)
 {

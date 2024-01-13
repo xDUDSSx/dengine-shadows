@@ -1,11 +1,12 @@
-
 #include "OrbitCamera.h"
+
+#include <algorithm>
 
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "dengine/platform/input/InputManager.h"
 
-using namespace Vp;
+using namespace Dg;
 
 void OrbitCamera::update()
 {
@@ -47,9 +48,9 @@ void OrbitCamera::processInput(double dt, glm::vec2 mousePos, glm::ivec2 windowS
 		m_dScroll = InputManager::m_mouseWheelOffset;
 	}
 
-	mouseWheel(m_dScroll * (m_smoothScroll ? 1 : 4));
+	mouseWheel(m_dScroll * (m_smoothScroll ? 1.f : 4.f));
 
-	m_dScroll *= std::min(std::max(-3.05 * dt + 0.89, 0.4), 0.93) * (m_smoothScroll ? 1 : 0);
+	m_dScroll *= static_cast<float>(std::min(std::max(-3.05 * dt + 0.89, 0.4), 0.93) * (m_smoothScroll ? 1 : 0));
 
 	if (m_dScroll * m_dScroll < 0.0005f)
 	{

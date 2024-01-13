@@ -2,7 +2,7 @@
 
 #include "Light.h"
 
-namespace Vp
+namespace Dg
 {
 class PointLight : public Light
 {
@@ -10,4 +10,4 @@ public:
 	float radius = 12.0f;
 	void setUniforms(const PhongShader& shader, int index) const;
 };
-} // namespace Vp
+} // namespace Dg

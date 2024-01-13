@@ -10,7 +10,7 @@ namespace Core
 class Mesh;
 }
 
-namespace Vp
+namespace Dg
 {
 /**
  * \brief A utility class for constructing simple shapes.
@@ -122,4 +122,4 @@ public:
 	const std::vector<float>& getVertices() const;
 	const std::vector<float>& getColors() const;
 };
-} // namespace Vp
+} // namespace Dg

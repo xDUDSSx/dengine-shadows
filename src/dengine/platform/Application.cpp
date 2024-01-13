@@ -133,7 +133,13 @@ int Application::init(const char* title)
 		LOG_INFO("DEBUG:    Yes")
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(openGlDebugCallback, nullptr);
-		glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
+		// Set debug level
+		GLenum severities[4] = {GL_DEBUG_SEVERITY_NOTIFICATION, GL_DEBUG_SEVERITY_LOW, GL_DEBUG_SEVERITY_MEDIUM,
+		                        GL_DEBUG_SEVERITY_HIGH};
+		for (int i = 0; i < 4; i++)
+		{
+			glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, severities[i], 0, nullptr, i >= m_debugLevel ? GL_TRUE : GL_FALSE);
+		}
 	}
 	else
 	{

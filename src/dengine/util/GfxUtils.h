@@ -5,7 +5,7 @@
 
 #include "glm/glm.hpp"
 
-namespace Vp
+namespace Dg
 {
 namespace GfxUtils
 {
@@ -28,4 +28,4 @@ inline std::pair<glm::vec3, glm::vec3> createBoundingBox(std::vector<glm::vec3> 
 	return std::make_pair(min, max);
 }
 } // namespace GfxUtils
-} // namespace Vp
+} // namespace Dg

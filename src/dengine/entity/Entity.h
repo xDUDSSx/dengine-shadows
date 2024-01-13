@@ -2,7 +2,7 @@
 
 #include "dengine/platform/DGL.h"
 
-namespace Vp
+namespace Dg
 {
 class Scene;
 class Shader;
@@ -25,7 +25,7 @@ protected:
 	DisplayType m_displayType{DisplayType::Default};
 
 public:
-	glm::mat4 m_modelMatrix{1}; ///< Model transformation of the entity
+	glm::mat4 m_modelMatrix{1.f}; ///< Model transformation of the entity
 
 	// Some basic properties
 	bool m_backFaceCull;
@@ -129,4 +129,4 @@ public:
 		return m_highlightColor;
 	}
 };
-} // namespace Vp
+} // namespace Dg

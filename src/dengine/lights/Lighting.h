@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-namespace Vp
+namespace Dg
 {
 class Light;
 class PhongShader;
@@ -30,4 +30,4 @@ public:
 	std::vector<std::shared_ptr<Light>> getLights() const;
 };
 
-} // namespace Vp
+} // namespace Dg

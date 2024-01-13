@@ -1,7 +1,7 @@
 
 #include "AbstractOrbitCamera.h"
 
-using namespace Vp;
+using namespace Dg;
 
 void AbstractOrbitCamera::centerOnBox(glm::vec3 boxMin, glm::vec3 boxMax, bool interpolate)
 {

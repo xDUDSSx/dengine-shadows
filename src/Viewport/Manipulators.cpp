@@ -11,7 +11,7 @@
 //#include "dengine/platform/Logger.h"
 //#include "Utils/Format.h"
 //
-//using namespace Vp;
+//using namespace Dg;
 //
 //Manipulators::Manipulators(Viewport* viewport) : m_viewport(viewport)
 //{

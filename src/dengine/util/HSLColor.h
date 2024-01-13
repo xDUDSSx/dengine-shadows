@@ -79,7 +79,7 @@ inline void rgbToHsl(float R, float G, float B, float* H, float* S, float* L)
 	if (delta > 0.0)
 	{
 		if (max == R)
-			*H = fmod(((60 * (G - B) / (max - min)) + 360), 360.0);
+			*H = fmodf(((60 * (G - B) / (max - min)) + 360), 360.0);
 		else if (max == G)
 			*H = (60 * (B - R) / (max - min)) + 120;
 		else if (max == B)

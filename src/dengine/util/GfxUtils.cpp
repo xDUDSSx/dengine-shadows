@@ -1,6 +1,6 @@
 #include "GfxUtils.h"
 
-namespace Vp
+namespace Dg
 {
 namespace GfxUtils
 {
@@ -28,4 +28,4 @@ void extractZNearZFar(glm::mat4 projection, float& zNear, float& zFar)
 	}
 }
 } // namespace GfxUtils
-} // namespace Vp
+} // namespace Dg

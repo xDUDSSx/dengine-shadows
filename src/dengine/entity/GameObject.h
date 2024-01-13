@@ -5,7 +5,7 @@
 #include "dengine/Resources/Mesh.h"
 #include "Entity.h"
 
-namespace Vp
+namespace Dg
 {
 class ObjectShader;
 
@@ -32,4 +32,4 @@ public:
 	void update(Scene& scene) override;
 	void dispose() override;
 };
-} // namespace Vp
+} // namespace Dg

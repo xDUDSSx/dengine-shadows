@@ -1,10 +1,10 @@
 
 #include "GameObject.h"
 
-#include "Viewport/shader/ObjectShader.h"
-#include "Viewport/shader/Shaders.h"
+#include "dengine/shader/ObjectShader.h"
+#include "dengine/shader/Shaders.h"
 
-using namespace Vp;
+using namespace Dg;
 
 GameObject::GameObject(Core::Mesh* mesh, ObjectShader* shader) : m_mesh(mesh)
 {

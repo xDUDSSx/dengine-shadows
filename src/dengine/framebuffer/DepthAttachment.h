@@ -2,7 +2,7 @@
 
 #include "dengine/platform/DGL.h"
 
-namespace Vp
+namespace Dg
 {
 /**
  * Depth attachment using a Renderbuffer
@@ -48,4 +48,4 @@ public:
 	void dispose();
 };
 
-} // namespace Vp
+} // namespace Dg

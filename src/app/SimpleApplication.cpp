@@ -6,17 +6,17 @@
 #include "dengine/platform/input/InputManager.h"
 
 #include "dengine/resources/Shaper.h"
-#include "Viewport/shader/Shaders.h"
+#include "dengine/shader/Shaders.h"
 
 SimpleApplication::SimpleApplication() : Application("Dengine") {}
 
 bool SimpleApplication::onInit()
 {
 	// Load shaders
-	Vp::Shaders::instance().load();
+	Dg::Shaders::instance().load();
 
 	// Load shapes
-	Vp::Shaper::initDefaultShapes();
+	Dg::Shaper::initDefaultShapes();
 
 	// Preload some useful models
 	RMI.mesh("Data/Models/camera.gltf");
@@ -29,7 +29,7 @@ bool SimpleApplication::onInit()
 	m_scene->init();
 
 	// Create render target
-	Vp::RenderOptions renderOptions;
+	Dg::RenderOptions renderOptions;
 	renderOptions.multisample = true;
 	renderOptions.selection = true;
 	if (!m_renderTarget)

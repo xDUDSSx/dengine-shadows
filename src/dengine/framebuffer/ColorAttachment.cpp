@@ -3,7 +3,7 @@
 
 #include "dengine/platform/Logger.h"
 
-using namespace Vp;
+using namespace Dg;
 
 ColorAttachment::ColorAttachment(GLint internalFormat, GLint format, GLsizei width, GLsizei height, GLenum type)
     : m_format(format), m_internalFormat(internalFormat), m_width(width), m_height(height), m_type(type)

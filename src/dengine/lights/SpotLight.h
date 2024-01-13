@@ -2,7 +2,7 @@
 
 #include "Light.h"
 
-namespace Vp
+namespace Dg
 {
 class SpotLight : public Light
 {
@@ -14,4 +14,4 @@ public:
 
 	void setUniforms(const PhongShader& shader, int index) const override;
 };
-} // namespace Vp
+} // namespace Dg

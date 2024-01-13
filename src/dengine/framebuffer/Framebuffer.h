@@ -12,7 +12,7 @@
 #define FBO_DEFAULT_WIDTH 100
 #define FBO_DEFAULT_HEIGHT 100
 
-namespace Vp
+namespace Dg
 {
 /**
  * \brief A utility class for managing an OpenGL FrameBufferObject.
@@ -255,4 +255,4 @@ private:
 	 */
 	bool checkFramebuffer();
 };
-} // namespace Vp
+} // namespace Dg

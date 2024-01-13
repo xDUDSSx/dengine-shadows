@@ -9,7 +9,7 @@
 // TODO: (DR) Cameras should have an ability to recieve a view matrix and reconstruct parameters from it, or force using
 // it for some time, would allow view changing using buttons or interpolated view rotation.
 
-namespace Vp
+namespace Dg
 {
 /**
  * Abstract camera base class.
@@ -152,4 +152,4 @@ protected:
 	std::vector<glm::vec3> createBoundingBoxWorldPoints(glm::vec3 boxMin, glm::vec3 boxMax, glm::mat4 modelMatrix);
 };
 
-} // namespace Vp
+} // namespace Dg

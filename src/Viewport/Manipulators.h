@@ -11,7 +11,7 @@
 //
 //#include "ImGuizmo.h"
 //
-//namespace Vp
+//namespace Dg
 //{
 //class Viewport;
 //
@@ -81,4 +81,4 @@
 //	bool drawLookAt(Ptr<Manipulators::Manipulator> manipulator, glm::mat4 view, glm::mat4 projection);
 //	void updateManipulatorMatrices(Manipulator& manipulator, std::shared_ptr<Core::Node> node);
 //};
-//} // namespace Vp
+//} // namespace Dg

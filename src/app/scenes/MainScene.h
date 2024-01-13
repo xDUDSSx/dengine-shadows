@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Viewport/scene/Scene.h"
+#include "dengine/scene/Scene.h"
 
-namespace Vp
+namespace Dg
 {
 class OrbitCamera;
 }
 
-class MainScene : public Vp::Scene
+class MainScene : public Dg::Scene
 {
   public:
-	std::shared_ptr<Vp::OrbitCamera> m_orbitCamera;
+	std::shared_ptr<Dg::OrbitCamera> m_orbitCamera;
 
 	explicit MainScene();
 
