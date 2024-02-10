@@ -15,6 +15,7 @@ public:
 	glm::vec3 color{glm::vec3(1)};
 	glm::vec3 specular{glm::vec3(1)};
 	float intensity{0.6f};
+
 	virtual void setUniforms(const PhongShader& shader, int index) const = 0;
 };
 } // namespace Dg

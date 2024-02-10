@@ -15,4 +15,5 @@ class MainScene : public Dg::Scene
 	explicit MainScene();
 
 	void init() override;
+	void draw(int width, int height, Dg::SceneRenderTarget& renderTarget, const Dg::DisplayOptions& displayOptions) override;
 };

@@ -7,6 +7,7 @@
 #include "dengine/platform/Common.h"
 
 #include "dengine/util/GfxUtils.h"
+#include "dengine/util/BoundingBox.h"
 #include "dengine/scene/Scene.h"
 
 using namespace Dg;
@@ -174,8 +175,8 @@ void AbstractCamera::centerOnObjects(const std::vector<const GameObject*> object
 	}
 
 	// Create world space axis aligned bounding box containing all the points
-	auto aaBox = GfxUtils::createBoundingBox(points);
-	centerOnBox(aaBox.first, aaBox.second, true);
+	auto aaBox = BoundingBox::createBoundingBox(points);
+	centerOnBox(aaBox.m_min, aaBox.m_max, true);
 }
 
 void AbstractCamera::centerOnBox(glm::vec3 boxMin, glm::vec3 boxMax, bool interpolate) {}

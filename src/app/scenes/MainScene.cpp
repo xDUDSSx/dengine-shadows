@@ -20,18 +20,21 @@ MainScene::MainScene() : Scene()
 struct Transform : public DgTest::Component
 {
   public:
-	~Transform() {
+	~Transform()
+	{
 		int x = 3;
 		LOG_INFO("Transform DESTROY");
 	}
-	Transform(Transform&& other) {
+	Transform(Transform&& other)
+	{
 		// Move constr
 		this->x = other.x;
 		this->y = other.y;
 		this->z = other.z;
 		LOG_INFO("Transform MOVE");
 	}
-	Transform(Transform& other) {
+	Transform(Transform& other)
+	{
 		// Copy constr
 		this->x = other.x;
 		this->y = other.y;
@@ -51,9 +54,9 @@ void ecsTest()
 	entity.registerComponent<Transform>();
 
 	Transform test{1.2f, 3.1f, 11.3f};
-//	entity.addComponent(Transform());
+	//	entity.addComponent(Transform());
 	entity.addComponent(std::move(test));
-	//entity.createComponent<Transform>(1.0f, 2.4f, 3.1f);
+	// entity.createComponent<Transform>(1.0f, 2.4f, 3.1f);
 
 	Transform& t = entity.getComponent<Transform>();
 	t.x = 99.4f;
@@ -80,13 +83,19 @@ void MainScene::init()
 	sun->pos = glm::vec3(0, 4, 0);
 	m_lighting->addLight(sun);
 
-	Dg::SunLight* sun2 = new Dg::SunLight();
-	sun2->intensity = 0.08f;
-	sun2->color = glm::vec3(0.804, 0.945, 1);
-	sun2->specular = glm::vec3(0.0f); // Disable specular
-	sun2->direction = glm::vec3(0.76, 0.58, 0.19);
-	sun->pos = glm::vec3(0, 2, 0);
-	m_lighting->addLight(sun2);
+	m_lighting->m_shadowSunLight.intensity = 0.8f;
+	m_lighting->m_shadowSunLight.color = glm::vec3(0.93, 0.98, 1.0);
+	m_lighting->m_shadowSunLight.direction = glm::vec3(-0.73, -0.64, -0.21);
+	m_lighting->m_shadowSunLight.pos = glm::vec3(35, 30, 10);
+	m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
+
+	//	Dg::SunLight* sun2 = new Dg::SunLight();
+	//	sun2->intensity = 0.08f;
+	//	sun2->color = glm::vec3(0.804, 0.945, 1);
+	//	sun2->specular = glm::vec3(0.0f); // Disable specular
+	//	sun2->direction = glm::vec3(0.76, 0.58, 0.19);
+	//	sun->pos = glm::vec3(0, 2, 0);
+	//	m_lighting->addLight(sun2);
 
 	Dg::Mesh* planeMesh = RMI.mesh("Data/Models/plane.gltf");
 	Ptr<Dg::TexturedObject> plane =
@@ -120,4 +129,9 @@ void MainScene::init()
 
 	// Ecs test
 	ecsTest();
+}
+
+void MainScene::draw(int width, int height, Dg::SceneRenderTarget& renderTarget, const Dg::DisplayOptions& displayOptions)
+{
+	Scene::draw(width, height, renderTarget, displayOptions);
 }

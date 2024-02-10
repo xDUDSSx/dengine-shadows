@@ -99,6 +99,8 @@ public:
 
 	void lineBox(glm::vec3 from, glm::vec3 to);
 
+	void lineBox(const glm::vec3* eightPoints);
+
 	/**
 	 * \brief Clear prepared geometry (vertices and colors).
 	 */

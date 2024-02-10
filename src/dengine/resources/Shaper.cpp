@@ -189,6 +189,15 @@ void Shaper::lineBox(glm::vec3 from, glm::vec3 to)
 	}
 }
 
+void Shaper::lineBox(const glm::vec3* arr)
+{
+	unsigned int lineArr[24] = {0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 3, 7, 2, 6, 1, 5};
+	for (int i = 0; i < 24; i += 2)
+	{
+		line(glm::vec3(glm::vec4(arr[lineArr[i]], 1.0f)), glm::vec3(glm::vec4(arr[lineArr[i + 1]], 1.0f)), currentColor);
+	}
+}
+
 void Shaper::clear()
 {
 	vertices.clear();
@@ -216,7 +225,7 @@ Dg::Mesh* Shaper::createLineMesh(const std::string& alias)
 	if (alias.empty())
 	{
 		mesh = Dg::Mesh::create(Dg::Mesh::LINES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
-		                          getColors().size() / 3);
+		                        getColors().size() / 3);
 	}
 	else
 	{
@@ -237,7 +246,7 @@ Dg::Mesh* Shaper::createMesh(const std::string& alias)
 	if (alias.empty())
 	{
 		mesh = Dg::Mesh::create(Dg::Mesh::TRIANGLES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
-		                          getColors().size() / 3);
+		                        getColors().size() / 3);
 	}
 	else
 	{

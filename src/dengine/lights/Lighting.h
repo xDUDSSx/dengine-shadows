@@ -3,6 +3,11 @@
 #include <memory>
 #include <vector>
 
+#include "dengine/platform/Common.h"
+
+#include "ShadowCastingLight.h"
+#include "ShadowSunLight.h"
+
 namespace Dg
 {
 class Light;
@@ -13,9 +18,11 @@ class PhongShader;
  */
 class Lighting
 {
-	std::vector<std::shared_ptr<Light>> lights;
+	std::vector<Ptr<Light>> lights;
 
 public:
+  	ShadowSunLight m_shadowSunLight; // TODO: (DR) Turn into a list later
+
 	/**
 	 * \brief Set light information uniforms for a shader.
 	 * \param shader The shader

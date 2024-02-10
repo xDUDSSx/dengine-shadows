@@ -107,7 +107,18 @@ uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 // Shadow mapping
 uniform sampler2D u_shadowMap;
 //uniform vec3 u_lightPos;
-uniform mat4 u_lightView;
+//uniform mat4 u_lightView;
+
+struct ShadowSunLight {
+	vec3 direction;
+
+	float intensity;
+	vec3 color;
+	vec3 specular;
+
+	mat4 lightPvm;
+};
+uniform ShadowSunLight u_shadowSunLight;
 
 float map(float value, float min1, float max1, float min2, float max2) {
 	return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
@@ -137,7 +148,7 @@ float distancePointToPlane(vec3 point, vec3 planePoint, vec3 planeNormal)
 }
 
 //float calculateShadowFactor(vec3 sunPos, vec3 sunDir)
-float calculateShadowFactor(vec3 normal, vec3 lightDir)
+float calculateShadowFactor(mat4 lightPvm, vec3 normal, vec3 lightDir)
 {
 //	return 1.0;
 //	return texture(u_shadowMap, vec2(0.1, 0.1)).r;
@@ -147,7 +158,7 @@ float calculateShadowFactor(vec3 normal, vec3 lightDir)
 //	// get vector between fragment position and light position
 //	vec3 fragToLight = fragPos - lightPos;
 
-	vec4 lightSpaceFragPos = u_lightView * FragPosWorld; // is actually a pvm matrix
+	vec4 lightSpaceFragPos = lightPvm * FragPosWorld; // is actually a pvm matrix
 	vec3 lightNDCSpaceFragPos = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
 	lightNDCSpaceFragPos = lightNDCSpaceFragPos * 0.5 + 0.5;
 
@@ -248,10 +259,34 @@ vec3 calculateSunLight(SunLight light, Material material, vec3 fragPos, vec3 nor
 
 	//specularLight *= 0.3f;//Turn down sun specular a bit
 
-    //return light.intensity * (ambientLight + diffuseLight + specularLight);
-	float shadow = calculateShadowFactor(N, L);
+    return light.intensity * (ambientLight + diffuseLight + specularLight);
+}
+
+vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragPos, vec3 normal, vec3 tangent, vec3 binormal) {
+	if (light.intensity <= 0) {
+		return vec3(0);
+	}
+
+	normal = calculateNormalMapping(normal, tangent, binormal);
+
+	vec3 lightDir = (viewMatrix * vec4(light.direction, 0.0)).xyz;
+	vec3 fragToLight = -lightDir;
+	vec3 L = normalize(fragToLight);
+	vec3 N = normalize(normal);
+	vec3 R = reflect(-L, N);
+	vec3 V = normalize(-fragPos);
+
+	vec3 ambientLight = calculateAmbientLight(light.color, material.ambient);
+	vec3 diffuseLight = calculateDiffuseLight(light.color, material.diffuse, N, L);
+	vec3 specularLight = calculateSpecularLight(light.color, material.specular, L, V, N, R, material.shininess);
+	specularLight *= light.specular;
+
+	//specularLight *= 0.3f;//Turn down sun specular a bit
+
+	//return light.intensity * (ambientLight + diffuseLight + specularLight);
+	float shadow = calculateShadowFactor(light.lightPvm, N, L);
 	return ((1.0 - shadow) * (diffuseLight + specularLight));
-//	return light.intensity * (ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)));
+	//	return light.intensity * (ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)));
 }
 
 vec3 calculateSpotLight(SpotLight light, Material material, vec3 fragPos, vec3 normal, vec3 tangent, vec3 binormal) {
@@ -325,15 +360,16 @@ void main() {
 	alpha = min(alpha, u_opacity);
 
 	vec3 outColor = vec3(0);
-	for (int i = 0; i < sunLightsCount; i++) {
-		outColor += calculateSunLight(sunLights[i], material, FragPos, Normal, Tangent, Binormal);
-	}
-	for (int i = 0; i < pointLightsCount; i++) {
-		outColor += calculatePointLight(pointLights[i], material, FragPos, Normal, Tangent, Binormal);
-	}
-	for (int i = 0; i < spotLightsCount; i++) {
-		outColor += calculateSpotLight(spotLights[i], material, FragPos, Normal, Tangent, Binormal);
-	}
+//	for (int i = 0; i < sunLightsCount; i++) {
+//		outColor += calculateSunLight(sunLights[i], material, FragPos, Normal, Tangent, Binormal);
+//	}
+//	for (int i = 0; i < pointLightsCount; i++) {
+//		outColor += calculatePointLight(pointLights[i], material, FragPos, Normal, Tangent, Binormal);
+//	}
+//	for (int i = 0; i < spotLightsCount; i++) {
+//		outColor += calculateSpotLight(spotLights[i], material, FragPos, Normal, Tangent, Binormal);
+//	}
+	outColor += calculateSunLightShadow(u_shadowSunLight, material, FragPos, Normal, Tangent, Binormal);
 
 	float gamma = 1.1;
 	float exposure = 1.6;

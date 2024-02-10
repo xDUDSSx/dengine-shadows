@@ -4,6 +4,7 @@
 
 #include "dengine/platform/CommonImGui.h"
 #include "dengine/platform/input/InputManager.h"
+#include "dengine/camera/OrbitCamera.h"
 
 #include "dengine/resources/Shaper.h"
 #include "dengine/shader/Shaders.h"
@@ -66,6 +67,11 @@ void SimpleApplication::onDisplay()
 //	GLuint texture = m_renderTarget->getOutputFramebuffer().lock()->getColorTexture();
 	// the uv coordinates flips the picture, since it was upside down at first
 	ImGui::Image((void*) (intptr_t) texture, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::End();
+
+	ImGui::Begin("Info", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	glm::vec3 cameraPos = m_scene->m_orbitCamera->getPosition();
+	ImGui::Text("Camera position: %f, %f, %f", cameraPos.x, cameraPos.y, cameraPos.z);
 	ImGui::End();
 }
 

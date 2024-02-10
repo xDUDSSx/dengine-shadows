@@ -175,7 +175,6 @@ class Scene
 
 	void renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection, const std::vector<Entity*>& entities) const;
 
-	Ptr<Framebuffer> drawShadowBuffer(glm::vec3 lightPos, float far_plane, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
-	                                  const DisplayOptions& displayOptions);
+	void drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOptions, const DisplayOptions& displayOptions);
 };
 } // namespace Dg

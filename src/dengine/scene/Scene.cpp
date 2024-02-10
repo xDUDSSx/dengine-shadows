@@ -20,6 +20,9 @@
 #include "dengine/util/HSLColor.h"
 #include "dengine/shader/Shaders.h"
 #include "dengine/shader/ShadowShader.h"
+#include "dengine/lights/ShadowMap.h"
+#include "dengine/util/DebugDraw.h"
+#include "dengine/util/Color.h"
 
 namespace Dg
 {
@@ -78,19 +81,14 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 	}
 
 	// Draw shadow maps
-	Ptr<Framebuffer> shadowFBO;
-	glm::mat4 lightMatrix;
-	glm::vec3 lightPos;
+	glm::mat4 lightMatrix{1.0f};
+	glm::vec3 lightPos{1.0f};
+
+	Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
 	if (renderOptions.shadows)
 	{
-		float near_plane = 1.0f, far_plane = 20.f;
-		lightPos = glm::vec3(-5.0f, 8.0f, -3.0f);
-		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		glm::mat4 lightView =
-		    glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		lightMatrix = lightProjection * lightView;
-
-		shadowFBO = drawShadowBuffer(lightPos, far_plane, lightView, lightProjection, renderTarget, displayOptions);
+		shadowMap->m_shadowFBO = renderTarget.getFramebuffer("shadows");
+		drawShadowBuffer(*shadowMap, renderOptions, displayOptions);
 	}
 
 	// Draw the scene
@@ -143,7 +141,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					{
 						glStencilMask(0x00);
 					}
-					Renderer::RenderContext context = entity->prepareRenderContext();
+					Renderer::RenderContext context = entity->createRenderContext();
 					context.m_wboit = false; // Not using wboit for opaque pass
 					entity->render(view, projection, context);
 				}
@@ -194,7 +192,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 				{
 					glStencilMask(0x00);
 				}
-				Renderer::RenderContext context = entity->prepareRenderContext();
+				Renderer::RenderContext context = entity->createRenderContext();
 				context.m_wboit = true;
 				context.m_wboitFunc = renderOptions.wboitFunc;
 				entity->render(view, projection, context);
@@ -253,12 +251,13 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			PhongShader* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
 			// TODO: (DR) Turn texture bindings into a generic Shader method
-			phongShader->m_shadowMapId = shadowFBO->getDepthAttachment()->m_id;
-//			phongShader->m_lightMatrix = lightMatrix;
-//			phongShader->m_lightPos = lightPos;
-			phongShader->m_lightView = lightMatrix;
+			phongShader->m_shadowMapId = shadowMap->m_shadowFBO.lock()->getDepthAttachment()->m_id;
+			//			phongShader->m_lightMatrix = lightMatrix;
+			//			phongShader->m_lightPos = lightPos;
+			//			phongShader->m_lightView = lightMatrix;
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
+			m_lighting->m_shadowSunLight.setUniforms(*phongShader, 0);
 
 			m_unorderedTransparentEntities.clear();
 			m_explicitTransparencyOrderEntitiesFirst.clear();
@@ -282,7 +281,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					{
 						glStencilMask(0x00);
 					}
-					Renderer::RenderContext context = entity->prepareRenderContext();
+					Renderer::RenderContext context = entity->createRenderContext();
 					context.m_wboit = false; // Not using wboit for opaque pass
 					entity->render(view, projection, context);
 					continue;
@@ -326,6 +325,9 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			renderSortedTransparentEntities(view, projection, m_unorderedTransparentEntities);
 			renderSortedTransparentEntities(view, projection, m_explicitTransparencyOrderEntitiesLast);
 		}
+
+		DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::LIGHT_BLUE, view, projection);
+
 		mainFBO->end(true);
 
 		// Return framebuffer
@@ -596,7 +598,7 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 	if (options.shadows)
 	{
 		auto d = DepthAttachment(false, 100, 100, false);
-		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024*4, 1024*4);
+		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024 * 4, 1024 * 4);
 		shadowFbo->setDepthAttachment(d);
 		renderTarget->addFramebuffer("shadows", shadowFbo);
 	}
@@ -646,7 +648,7 @@ void Scene::renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection
 		{
 			glStencilMask(0x00);
 		}
-		entity->render(view, projection, entity->prepareRenderContext());
+		entity->render(view, projection, entity->createRenderContext());
 		if (entity->m_backFaceCull)
 		{
 			glDisable(GL_CULL_FACE);
@@ -733,70 +735,62 @@ void Scene::triggerSelectionCallbacks(Entity* entity)
 	}
 }
 
-Ptr<Framebuffer> Scene::drawShadowBuffer(glm::vec3 lightPos, float far_plane, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
-                                         const DisplayOptions& displayOptions)
+void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOptions, const DisplayOptions& displayOptions)
 {
-	const RenderOptions& renderOptions = renderTarget.getRenderOptions();
 	// TODO: Shadow rendering should probably be handled per light
 	//   Either perform shadow rendering within Light objects? (that doesn't sound right, not really a light's responsibility)
 	//   Or create some separate system ShadowManager, that will keep track of lights and their shadow buffers separately
 	//   (preferrable)
 	// Shadows phase 1
-	if (renderOptions.shadows)
+	// TODO: Render the scene from POV of the light
+	// TODO: This method is huge, it should be split up into smaller ones
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilMask(0xFF);
+
+	Ptr<Framebuffer> shadowFBO = shadowMap.m_shadowFBO.lock();
+	shadowFBO->start();
 	{
-		// TODO: Render the scene from POV of the light
-		// TODO: This method is huge, it should be split up into smaller ones
+		glClear(GL_DEPTH_BUFFER_BIT);
 
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-		glDepthMask(GL_TRUE);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
 
-		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-		glStencilMask(0xFF);
-
-		Ptr<Framebuffer> shadowFBO = renderTarget.getFramebuffer("shadows").lock();
-		shadowFBO->start();
+		// Setup phong shader, later, shaders are switched for each object
+		ShadowShader* shadowShader = Shaders::instance().getShaderPtr<ShadowShader>();
+		for (auto& entity : m_entities)
 		{
-			glClear(GL_DEPTH_BUFFER_BIT);
+			entity->m_wboit = false; // Not using wboit
+			if (!entity->m_visible)
+				continue;
+			if (!displayOptions.shouldDraw(*entity))
+				continue;
 
-			glEnable(GL_CULL_FACE);
-			glCullFace(GL_FRONT);
+			// Render all entities
 
-			// Setup phong shader, later, shaders are switched for each object
-			ShadowShader* shadowShader = Shaders::instance().getShaderPtr<ShadowShader>();
-			for (auto& entity : m_entities)
-			{
-				entity->m_wboit = false; // Not using wboit
-				if (!entity->m_visible)
-					continue;
-				if (!displayOptions.shouldDraw(*entity))
-					continue;
-
-				// Render all entities
-
-				Renderer::RenderContext context;
-				context.m_renderType = Renderer::RenderType::DEPTH;
-//				context.m_renderType = Renderer::RenderType::CUSTOM;
-//				shadowShader->m_lightPos = lightPos;
-//				shadowShader->m_zFar = far_plane;
-//				shadowShader->getSunPositionFromViewMatrix(view);
-//				context.m_shader = shadowShader;
-				entity->prepareRenderContext(context);
-				if (!entity->m_shadowCullFront)
-					glDisable(GL_CULL_FACE);
-				entity->render(view, projection, context);
-				if (!entity->m_shadowCullFront)
-					glEnable(GL_CULL_FACE);
-			}
-			glDisable(GL_CULL_FACE);
+			Renderer::RenderContext context;
+			context.m_renderType = Renderer::RenderType::DEPTH;
+			//				context.m_renderType = Renderer::RenderType::CUSTOM;
+			//				shadowShader->m_lightPos = lightPos;
+			//				shadowShader->m_zFar = far_plane;
+			//				shadowShader->getSunPositionFromViewMatrix(view);
+			//				context.m_shader = shadowShader;
+			entity->prepareRenderContext(context);
+			if (!entity->m_shadowCullFront)
+				glDisable(GL_CULL_FACE);
+			entity->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
+			if (!entity->m_shadowCullFront)
+				glEnable(GL_CULL_FACE);
 		}
-		shadowFBO->end();
-		return shadowFBO;
+		glDisable(GL_CULL_FACE);
 	}
-	return nullptr;
-
+	shadowFBO->end();
 	// Shadows phase 2
 }
 

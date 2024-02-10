@@ -80,7 +80,7 @@ class Entity
 
 	virtual void prepareRenderContext(Renderer::RenderContext& context) = 0;
 
-	inline Renderer::RenderContext prepareRenderContext()
+	inline Renderer::RenderContext createRenderContext()
 	{
 		Renderer::RenderContext context;
 		prepareRenderContext(context);
