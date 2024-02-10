@@ -26,6 +26,9 @@ public:
 	GLint m_wboitNearId;
 	GLint m_wboitFarId;
 
+	// Flags
+	bool m_pvmOnly{false};
+
 	explicit WorldShader(GLuint id);
 
 	void init(bool initSuperclass) override;

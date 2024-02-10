@@ -31,7 +31,7 @@ void Shader::setUniforms()
 	}
 }
 
-void Shader::setUniformsPerMeshPart(Core::Mesh::MeshPart& meshPart)
+void Shader::setUniformsPerMeshPart(Dg::Mesh::MeshPart& meshPart)
 {
 	// Empty
 }

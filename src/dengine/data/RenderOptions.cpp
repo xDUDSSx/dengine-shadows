@@ -13,6 +13,6 @@ RenderOptions::RenderOptions()
 	wboitFunc = 0;
 	selection = false;
 	lightingModel = PhongShader::LightingModel::BLINN_PHONG;
-
+	shadows = false;
 	clearColor = glm::vec3(0.2f, 0.2f, 0.2f);
 }

@@ -20,6 +20,7 @@ public:
 	int wboitFunc;
 	bool selection;
 	int lightingModel;
+	bool shadows;
 
 	glm::vec3 clearColor;
 

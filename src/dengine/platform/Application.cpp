@@ -29,14 +29,16 @@ void glfwKeyCallback(GLFWwindow* window, int key, int scancode, int action, int 
 }
 
 void GLAPIENTRY openGlDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message,
-                                    const void* userParam){
-    LOG_ERROR("[OGL DEBUG] [{}] [{}, {}]: {}", GLUtils::Debug::severityToString(severity), GLUtils::Debug::sourceToString(source),
-              GLUtils::Debug::typeToString(type), message)}
-
-Application::Application(const char* title)
-    : m_title(title)
+                                    const void* userParam)
 {
+	LOG_WARN("[OGL DEBUG] [{}] [{}, {}]: {}", GLUtils::Debug::severityToString(severity), GLUtils::Debug::sourceToString(source),
+	         GLUtils::Debug::typeToString(type), message);
+	LOG_WARN("[OGL DEBUG] Backtrace:");
+	GLUtils::Debug::printBacktrace();
+	LOG_WARN("[OGL DEBUG] == Call stack end ==");
 }
+
+Application::Application(const char* title) : m_title(title) {}
 
 int Application::run(int argc, char** argv)
 {
@@ -130,7 +132,7 @@ int Application::init(const char* title)
 	// Enable OGL debug
 	if (m_debug && glfwExtensionSupported("GL_ARB_debug_output"))
 	{
-		LOG_INFO("DEBUG:    Yes")
+		LOG_INFO("DEBUG:    Yes");
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(openGlDebugCallback, nullptr);
 		// Set debug level
@@ -143,7 +145,7 @@ int Application::init(const char* title)
 	}
 	else
 	{
-		LOG_INFO("DEBUG:    No")
+		LOG_INFO("DEBUG:    No");
 	}
 
 	LOG_INFO("========================");
@@ -166,6 +168,8 @@ int Application::init(const char* title)
 	InputManager::bindKey("rotate", Keys::mouseRight);
 
 	onInit();
+
+	return 0;
 }
 
 void Application::display()

@@ -19,6 +19,10 @@ class Shader
 public:
 	GLuint m_id;
 
+	std::string m_vertSource;
+	std::string m_fragSource;
+	std::string m_geoSource;
+
 	/**
 	 * Whether to use weighted blended transparency for output if supported
 	 * \see supportsWboit()
@@ -47,7 +51,7 @@ public:
 	 * Set uniforms before rendering individual mesh parts
 	 * @param meshPart MeshPart being rendered
 	 */
-	virtual void setUniformsPerMeshPart(Core::Mesh::MeshPart& meshPart);
+	virtual void setUniformsPerMeshPart(Dg::Mesh::MeshPart& meshPart);
 
 	void bindTexture2D(GLuint textureUnit, GLuint textureID, GLint samplerLocation);
 	void bindTexture2DMS(GLuint textureUnit, GLuint textureID, GLint samplerLocation);

@@ -15,4 +15,6 @@ NamespaceIndentation: None
 AlwaysBreakTemplateDeclarations: 'Yes'
 AllowShortFunctionsOnASingleLine: Empty
 SpaceAfterCStyleCast: true
+IndentCaseBlocks: true
+IndentCaseLabels: true
 ...

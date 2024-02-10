@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dengine/platform/DGL.h"
+#include "dengine/renderer/Renderer.h"
 
 namespace Dg
 {
@@ -21,49 +22,39 @@ enum class DisplayType
  */
 class Entity
 {
-protected:
+  protected:
 	DisplayType m_displayType{DisplayType::Default};
 
-public:
+  public:
 	glm::mat4 m_modelMatrix{1.f}; ///< Model transformation of the entity
 
 	// Some basic properties
 	bool m_backFaceCull;
 	bool m_visible;
 	bool m_opaque;
-	bool m_wboit;    ///< Whether this entity should be rendered using order independent transparency,
-	                 ///< relevant if using a shader that supports wboit
-	int m_wboitFunc; ///< Index of the weight function to be used in wboit
+	bool m_wboit;                             ///< Whether this entity should be rendered using order independent transparency,
+	                                          ///< relevant if using a shader that supports wboit
+	int m_wboitFunc;                          ///< Index of the weight function to be used in wboit
 	unsigned int m_explicitTransparencyOrder; ///< Explicit order for ordered transparency
 
 	// Selection properties
-	bool m_selectable;     ///< Whether this entity should be written into the selection stencil buffer
-	int m_selectionId{-1}; ///< Id of the object, -1 if not assigned, for selection purposes
-	bool m_highlight; ///< Whether to paint this entity with an outline, can be used for selection or just highlighting
+	bool m_selectable;        ///< Whether this entity should be written into the selection stencil buffer
+	int m_selectionId{-1};    ///< Id of the object, -1 if not assigned, for selection purposes
+	bool m_highlight;         ///< Whether to paint this entity with an outline, can be used for selection or just highlighting
 	bool m_highlightUseDepth; ///< Whether the highlight outline should respect the scene's depth buffer
 	glm::vec3 m_highlightColor;
 
 	Shader* m_shader{nullptr};
 
+	// Shadow mapping
+	bool m_shadowCaster{true};
+	bool m_shadowReceiver{true};
+	bool m_shadowCullFront{true};
+
 	Entity();
 	virtual ~Entity() = default;
 
 	virtual void update(Scene& scene) = 0;
-
-	void render(glm::mat4 view, glm::mat4 projection)
-	{
-		render(view, projection, false);
-	}
-	void render(glm::mat4 view, glm::mat4 projection, bool silhouette)
-	{
-		render(m_shader, view, projection, silhouette);
-	}
-
-protected:
-	void render(Shader* shader, glm::mat4 view, glm::mat4 projection)
-	{
-		render(shader, view, projection, false);
-	}
 
 	/**
 	 * IMPLEMENTATION NOTE:
@@ -85,9 +76,18 @@ protected:
 	 * an ECS or something. But it was decided to not dive into that realm and so we are stuck with this seemingly
 	 * simple but not very flexible inheritance structure.
 	 */
-	virtual void render(Shader* shader, glm::mat4 view, glm::mat4 projection, bool silhouette) = 0;
+	virtual void render(glm::mat4 view, glm::mat4 projection, const Renderer::RenderContext& context) = 0;
 
-public:
+	virtual void prepareRenderContext(Renderer::RenderContext& context) = 0;
+
+	inline Renderer::RenderContext prepareRenderContext()
+	{
+		Renderer::RenderContext context;
+		prepareRenderContext(context);
+		return context;
+	}
+
+  public:
 	virtual void dispose() = 0;
 
 	/**

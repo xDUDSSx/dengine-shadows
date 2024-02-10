@@ -8,7 +8,7 @@
 
 #include "ManagedResource.h"
 
-namespace Core
+namespace Dg
 {
 #define aPOS 0
 #define aNORMAL 1
@@ -227,4 +227,4 @@ private:
 		return glm::vec3(std::max(v1.x, v2.x), std::max(v1.y, v2.y), std::max(v1.z, v2.z));
 	}
 };
-} // namespace Core
+} // namespace Dg

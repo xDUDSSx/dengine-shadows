@@ -205,43 +205,43 @@ const std::vector<float>& Shaper::getColors() const
 	return colors;
 }
 
-Core::Mesh* Shaper::createLineMesh(const std::string& alias)
+Dg::Mesh* Shaper::createLineMesh(const std::string& alias)
 {
 	if (getVertices().empty() || getColors().empty())
 	{
 		throw std::runtime_error("Shaper: Can't create line mesh with 0 vertices / colors!");
 	}
 
-	Core::Mesh* mesh;
+	Dg::Mesh* mesh;
 	if (alias.empty())
 	{
-		mesh = Core::Mesh::create(Core::Mesh::LINES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
+		mesh = Dg::Mesh::create(Dg::Mesh::LINES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
 		                          getColors().size() / 3);
 	}
 	else
 	{
-		mesh = RMI.mesh(alias, Core::Mesh::LINES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
+		mesh = RMI.mesh(alias, Dg::Mesh::LINES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
 		                getColors().size() / 3);
 	}
 	return mesh;
 }
 
-Core::Mesh* Shaper::createMesh(const std::string& alias)
+Dg::Mesh* Shaper::createMesh(const std::string& alias)
 {
 	if (getVertices().empty() || getColors().empty())
 	{
 		throw std::runtime_error("Shaper: Can't create mesh with 0 vertices / colors!");
 	}
 
-	Core::Mesh* mesh;
+	Dg::Mesh* mesh;
 	if (alias.empty())
 	{
-		mesh = Core::Mesh::create(Core::Mesh::TRIANGLES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
+		mesh = Dg::Mesh::create(Dg::Mesh::TRIANGLES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
 		                          getColors().size() / 3);
 	}
 	else
 	{
-		mesh = RMI.mesh(alias, Core::Mesh::TRIANGLES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
+		mesh = RMI.mesh(alias, Dg::Mesh::TRIANGLES, &getVertices()[0], getVertices().size() / 3, &getColors()[0],
 		                getColors().size() / 3);
 	}
 	return mesh;

@@ -14,8 +14,8 @@ class ObjectShader;
  */
 class GameObject : public Entity
 {
-public:
-	Core::Mesh* m_mesh;
+  public:
+	Dg::Mesh* m_mesh;
 
 	// TODO: (DR) Move this to entity I suppose
 	float m_opacity{0.5f};
@@ -26,10 +26,12 @@ public:
 	 */
 	GameObject() = default;
 
-	GameObject(Core::Mesh* mesh, ObjectShader* shader);
+	GameObject(Dg::Mesh* mesh, ObjectShader* shader);
 
-	void render(Shader* shader, glm::mat4 view, glm::mat4 projection, bool silhouette) override;
+	void render(glm::mat4 view, glm::mat4 projection, const Renderer::RenderContext& context) override;
 	void update(Scene& scene) override;
 	void dispose() override;
+
+	void prepareRenderContext(Renderer::RenderContext& context) override;
 };
 } // namespace Dg

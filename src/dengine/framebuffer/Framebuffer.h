@@ -41,7 +41,7 @@ namespace Dg
  */
 class Framebuffer : public std::enable_shared_from_this<Framebuffer>
 {
-private:
+  private:
 	int m_width{FBO_DEFAULT_WIDTH};   ///< Buffer pixel width
 	int m_height{FBO_DEFAULT_HEIGHT}; ///< Buffer pixel height
 	bool m_multisample{false};        ///< Enable MultiSample AntiAliasing
@@ -58,7 +58,7 @@ private:
 	/// Depth attachment, can contain a stencil buffer
 	std::optional<DepthAttachment> m_depthAttachment;
 
-public:
+  public:
 	/**
 	 * Create a basic framebuffer with a single color attachment and a depth-stencil buffer.
 	 *
@@ -231,10 +231,21 @@ public:
 	int getWidth() const;
 	int getHeight() const;
 
+	/**
+	 * Sets the framebuffer to draw into all available color attachments at the same time.
+	 * If no attachments are present, the framebuffer is set to not to draw into any color buffers at all.
+	 * @see glDrawBuffer, glDrawBuffers
+	 */
 	void setDrawBuffers();
-	void setDrawBuffers(std::vector<unsigned int> indices);
 
-private:
+	/**
+	 * Specifies which color attachments are to be rendered into.
+	 * @param indices A list containing a list of color attachment indices. Other attachments will not be drawn into.
+	 * @see glDrawBuffer, glDrawBuffers
+	 */
+	void setDrawBuffers(const std::vector<unsigned int>& indices);
+
+  private:
 	/**
 	 * Resize the fbo to the specified dimensions.
 	 * Has no effect if the fbo is already that size.

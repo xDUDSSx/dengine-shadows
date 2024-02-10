@@ -5,7 +5,7 @@
 
 #include "dengine/platform/DGL.h"
 
-namespace Core
+namespace Dg
 {
 class Mesh;
 }
@@ -109,14 +109,14 @@ public:
 	 * @param alias Unique shape identifier
 	 * @return
 	 */
-	Core::Mesh* createLineMesh(const std::string& alias = "");
+	Dg::Mesh* createLineMesh(const std::string& alias = "");
 
 	/**
 	 * Create a triangle mesh from current shaper state and register it with ResourceManager
 	 * @param alias Unique shape identifier
 	 * @return
 	 */
-	Core::Mesh* createMesh(const std::string& alias = "");
+	Dg::Mesh* createMesh(const std::string& alias = "");
 
 public:
 	const std::vector<float>& getVertices() const;

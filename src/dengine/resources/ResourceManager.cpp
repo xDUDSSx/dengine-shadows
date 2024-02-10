@@ -10,7 +10,7 @@
 // Indicates that no hashid was specified
 #define NO_HASHID 0
 
-namespace Core
+namespace Dg
 {
 
 ResourceManager::~ResourceManager()
@@ -62,8 +62,7 @@ GLuint ResourceManager::texture(const std::string& alias, const std::string& pat
 			GLuint textureId = loadTexture(path);
 			if (textureId)
 			{
-				std::shared_ptr<Resource> textureResource =
-				    std::make_shared<Resource>(alias, path, ResourceType::Texture);
+				std::shared_ptr<Resource> textureResource = std::make_shared<Resource>(alias, path, ResourceType::Texture);
 				textureResource->hashId = id;
 				textureResource->data = std::make_shared<GLuint>(textureId);
 				m_resourceMap.insert(std::make_pair(id, textureResource));
@@ -104,8 +103,7 @@ GLuint ResourceManager::shader(const std::string& alias, const std::string& vert
 	return shaderG(alias, vertShader, fragShader, "");
 }
 
-GLuint ResourceManager::shaderG(const std::string& vertShader, const std::string& fragShader,
-                                const std::string& geoShader)
+GLuint ResourceManager::shaderG(const std::string& vertShader, const std::string& fragShader, const std::string& geoShader)
 {
 	return shaderG(NO_ALIAS, vertShader, fragShader, geoShader);
 }
@@ -124,10 +122,9 @@ GLuint ResourceManager::shaderG(const std::string& alias, const std::string& ver
 			GLuint shaderId = loadShader(vertShader, fragShader, geoShader);
 			if (shaderId)
 			{
-				std::string path = "Vert: " + vertShader + ", Frag: " + fragShader +
-				                   (geoShader.empty() ? "" : (", Geo: " + geoShader));
-				std::shared_ptr<Resource> shaderResource =
-				    std::make_shared<Resource>(alias, path, ResourceType::Shader);
+				std::string path =
+				    "Vert: " + vertShader + ", Frag: " + fragShader + (geoShader.empty() ? "" : (", Geo: " + geoShader));
+				std::shared_ptr<Resource> shaderResource = std::make_shared<Resource>(alias, path, ResourceType::Shader);
 				shaderResource->hashId = id;
 				shaderResource->data = std::make_shared<GLuint>(shaderId);
 				m_resourceMap.insert(std::make_pair(id, shaderResource));
@@ -224,10 +221,9 @@ Mesh* ResourceManager::mesh(const std::string& alias, Mesh::PrimitiveType primit
 		if (data.get() == nullptr)
 		{
 			// Load model
-			std::string dataSummary = " type: " + std::to_string(static_cast<int>(primitiveType)) +
-			                          " vertices: " + std::to_string(nVertices) +
-			                          (useIndices ? (" indices: " + std::to_string(nIndices)) : "") +
-			                          " colors: " + std::to_string(nColors);
+			std::string dataSummary =
+			    " type: " + std::to_string(static_cast<int>(primitiveType)) + " vertices: " + std::to_string(nVertices) +
+			    (useIndices ? (" indices: " + std::to_string(nIndices)) : "") + " colors: " + std::to_string(nColors);
 			LOG_INFO("[MODEL] Loading model '{}' from data:{}", alias, dataSummary);
 
 			Mesh* mesh = nullptr;
@@ -281,8 +277,7 @@ std::vector<std::string> ResourceManager::getImportedResourceAliases()
 	return m_importedResources;
 }
 
-std::shared_ptr<void> ResourceManager::getData(const std::string& alias, const size_t id, ResourceType type,
-                                               bool* success)
+std::shared_ptr<void> ResourceManager::getData(const std::string& alias, const size_t id, ResourceType type, bool* success)
 {
 	if (m_forceReload)
 	{
@@ -411,7 +406,6 @@ Ptr<Resource> ResourceManager::resourceByAlias(const std::string& alias)
 	return Ptr<Resource>();
 }
 
-
 void ResourceManager::createDefaultResources(const std::vector<Resource>& defaultResources)
 {
 	for (const auto& resource : defaultResources)
@@ -451,28 +445,29 @@ GLuint ResourceManager::loadTexture(const std::string& path)
 	return id;
 }
 
-GLuint ResourceManager::loadShader(const std::string& vertShader, const std::string& fragShader,
-                                   const std::string& geoShader)
+GLuint ResourceManager::loadShader(const std::string& vertShader, const std::string& fragShader, const std::string& geoShader)
 {
-	GLuint id = 1;
+	GLuint id = -1;
 	std::vector<GLuint> shaderList;
 
-	std::string absVert = vertShader;
-	std::string absFrag = fragShader;
-	if (geoShader.empty())
+	bool vert = !vertShader.empty();
+	bool frag = !fragShader.empty();
+	bool geo = !geoShader.empty();
+
+	if (!vert)
 	{
-		LOG_INFO("[SHADER] Loading shader: vert: {}, frag: {}", absVert, absFrag);
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_VERTEX_SHADER, absVert));
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_FRAGMENT_SHADER, absFrag));
+		LOG_ERROR("[SHADER] Cannot load shader, no vertex shader specified!");
+		return 0;
 	}
-	else
-	{
-		std::string absGeo = geoShader;
-		LOG_INFO("[SHADER] Loading shader: vert: {}, frag: {}, geo: {}", absVert, absFrag, absGeo);
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_VERTEX_SHADER, absVert));
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_FRAGMENT_SHADER, absFrag));
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_GEOMETRY_SHADER, absGeo));
-	}
+
+	LOG_INFO("[SHADER] Loading shader: vert: {}, frag: {}, geo: {}", vert ? vertShader : "none", frag ? fragShader : "none",
+	         geo ? geoShader : "none");
+
+	shaderList.push_back(GLUtils::createShaderFromFile(GL_VERTEX_SHADER, vertShader));
+	if (frag)
+		shaderList.push_back(GLUtils::createShaderFromFile(GL_FRAGMENT_SHADER, fragShader));
+	if (geo)
+		shaderList.push_back(GLUtils::createShaderFromFile(GL_GEOMETRY_SHADER, geoShader));
 
 	// Check for compilation error
 	for (const auto& stage : shaderList)
@@ -599,7 +594,7 @@ bool ResourceManager::removeResource(std::shared_ptr<Resource>& resource, bool f
 		}
 		if (isDefaultResource)
 		{
-			LOG_WARN("[RESOURCE MANAGER] Attempted to remove default resource id '{}'!", resource->hashId)
+			LOG_WARN("[RESOURCE MANAGER] Attempted to remove default resource id '{}'!", resource->hashId);
 			return false;
 		}
 	}
@@ -625,8 +620,7 @@ bool ResourceManager::removeResource(std::shared_ptr<Resource>& resource, bool f
 	{
 		LOG_ERROR("[RESOURCE MANAGER] Failed to erase resource from the resource map, id: '{}'", resource->hashId);
 	}
-	LOG_INFO("[RESOURCE MANAGER] Deleted resource id: {}, alias: {}{}.", resource->hashId, resource->alias,
-	         alternativeAliases);
+	LOG_INFO("[RESOURCE MANAGER] Deleted resource id: {}, alias: {}{}.", resource->hashId, resource->alias, alternativeAliases);
 	resource.reset(); // Ensure there is no dangling pointer
 	return true;
 }
@@ -643,4 +637,4 @@ Resource::Resource(std::string alias, size_t hashId, std::string path, ResourceT
 	// Empty
 }
 
-} // namespace Core
+} // namespace Dg

@@ -14,6 +14,7 @@ layout (location = 2) out float RevealageBuffer;
 // END WBOIT
 
 in vec3 FragPos;
+in vec4 FragPosWorld;
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 Tangent;
@@ -103,6 +104,11 @@ uniform SunLight sunLights[MAX_SUN_LIGHTS];
 uniform int spotLightsCount;
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
+// Shadow mapping
+uniform sampler2D u_shadowMap;
+//uniform vec3 u_lightPos;
+uniform mat4 u_lightView;
+
 float map(float value, float min1, float max1, float min2, float max2) {
 	return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
 }
@@ -124,6 +130,36 @@ float linearize_depth(float d, float zNear, float zFar)
 	float z_n = 2.0 * d - 1.0;
 	return 2.0 * zNear * zFar / (zFar + zNear - z_n * (zFar - zNear));
 }
+
+float distancePointToPlane(vec3 point, vec3 planePoint, vec3 planeNormal)
+{
+	return dot(planeNormal, point - planePoint);
+}
+
+//float calculateShadowFactor(vec3 sunPos, vec3 sunDir)
+float calculateShadowFactor(vec3 normal, vec3 lightDir)
+{
+//	return 1.0;
+//	return texture(u_shadowMap, vec2(0.1, 0.1)).r;
+
+//	float lightDist = distancePointToPlane(FragPosWorld, sunPos, sunDir);
+
+//	// get vector between fragment position and light position
+//	vec3 fragToLight = fragPos - lightPos;
+
+	vec4 lightSpaceFragPos = u_lightView * FragPosWorld; // is actually a pvm matrix
+	vec3 lightNDCSpaceFragPos = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
+	lightNDCSpaceFragPos = lightNDCSpaceFragPos * 0.5 + 0.5;
+
+	float fragDepth = lightNDCSpaceFragPos.z;
+	float shadowDepth = texture(u_shadowMap, lightNDCSpaceFragPos.xy).r;
+
+	//float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
+	float bias = 0.001;
+	float shadow = fragDepth + bias > shadowDepth ? 1.0 : 0.0;
+	return shadow;
+}
+
 
 vec3 calculateAmbientLight(vec3 lightColor, vec3 ambient) {
 	return lightColor * ambient * (diffuse0_active ? vec3(texture(diffuse0, texCoords())) : vec3(1)) * u_tint;
@@ -212,7 +248,10 @@ vec3 calculateSunLight(SunLight light, Material material, vec3 fragPos, vec3 nor
 
 	//specularLight *= 0.3f;//Turn down sun specular a bit
 
-	return light.intensity * (ambientLight + diffuseLight + specularLight);
+    //return light.intensity * (ambientLight + diffuseLight + specularLight);
+	float shadow = calculateShadowFactor(N, L);
+	return ((1.0 - shadow) * (diffuseLight + specularLight));
+//	return light.intensity * (ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)));
 }
 
 vec3 calculateSpotLight(SpotLight light, Material material, vec3 fragPos, vec3 normal, vec3 tangent, vec3 binormal) {
@@ -303,6 +342,11 @@ void main() {
 	mapped = pow(mapped, vec3(1.0 / gamma));// gamma correction
 
 	FragColor = vec4(mapped, alpha);
+
+//	ivec2 coords = ivec2(gl_FragCoord.xy);
+//	FragColor = vec4(texelFetch(u_shadowMap, coords, 0));
+
+//	FragColor = vec4(vec3(texture(u_shadowMap, vec2(gl_FragCoord.x / 800.0, gl_FragCoord.y / 600.0)).r), 1.0);
 
 	//float linearDepth = linearize_depth(gl_FragCoord.z, u_wboitNear, u_wboitFar);
 	//float wboitDepth = map(linearDepth, u_wboitNear, u_wboitFar, 0.1, 500.0);

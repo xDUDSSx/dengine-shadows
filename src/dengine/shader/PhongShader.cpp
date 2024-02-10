@@ -28,6 +28,10 @@ void PhongShader::init(bool initSuperclass)
 
 	tintId = glGetUniformLocation(m_id, "u_tint");
 	m_lightingModelId = glGetUniformLocation(m_id, "u_lightingModel");
+
+	m_shadowMapLoc = glGetUniformLocation(m_id, "u_shadowMap");
+//	m_lightMatrixLoc = glGetUniformLocation(m_id, "u_lightPos");
+	m_lightViewLoc = glGetUniformLocation(m_id, "u_lightView");
 }
 
 void PhongShader::setUniforms()
@@ -35,10 +39,15 @@ void PhongShader::setUniforms()
 	glUniform3fv(tintId, 1, glm::value_ptr(m_tint));
 	glUniform1i(m_lightingModelId, m_lightingModel);
 
+	bindTexture2D(5, m_shadowMapId, m_shadowMapLoc);
+	//glUniformMatrix4fv(m_lightMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_lightMatrix));
+//	glUniform3fv(m_lightMatrixLoc, 1, glm::value_ptr(m_lightPos));
+	glUniformMatrix4fv(m_lightViewLoc, 1, GL_FALSE, glm::value_ptr(m_lightView));
+
 	ObjectShader::setUniforms();
 }
 
-void PhongShader::setUniformsPerMeshPart(Core::Mesh::MeshPart& meshPart)
+void PhongShader::setUniformsPerMeshPart(Dg::Mesh::MeshPart& meshPart)
 {
 	setMaterialUniforms(meshPart.material);
 	clearTextures();
@@ -47,7 +56,7 @@ void PhongShader::setUniformsPerMeshPart(Core::Mesh::MeshPart& meshPart)
 	ObjectShader::setUniformsPerMeshPart(meshPart);
 }
 
-void PhongShader::setMaterialUniforms(Core::Mesh::Material material)
+void PhongShader::setMaterialUniforms(Dg::Mesh::Material material)
 {
 	glUniform3fv(material_diffuse, 1, glm::value_ptr(material.diffuse));
 	glUniform3fv(material_specular, 1, glm::value_ptr(material.specular));
@@ -55,7 +64,7 @@ void PhongShader::setMaterialUniforms(Core::Mesh::Material material)
 	glUniform1f(material_shininess, material.shininess);
 }
 
-void PhongShader::bindTextures(Core::Mesh::TextureSet tSet)
+void PhongShader::bindTextures(Dg::Mesh::TextureSet tSet)
 {
 	if (tSet.texture != 0)
 	{

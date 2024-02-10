@@ -71,7 +71,7 @@ void DepthAttachment::resize(int width, int height)
 		{
 			glBindTexture(GL_TEXTURE_2D, m_id);
 			glTexImage2D(GL_TEXTURE_2D, 0, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, width, height, 0,
-			             m_stencil ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT24,
+			             m_stencil ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
 			             m_stencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_INT, NULL);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_minFilter);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_magFilter);

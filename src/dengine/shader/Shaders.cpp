@@ -5,6 +5,8 @@ using namespace Dg;
 
 #include "dengine/shader/BoxBlurShader.h"
 #include "dengine/shader/ColorShader.h"
+#include "dengine/shader/DepthShader.h"
+#include "dengine/shader/ShadowShader.h"
 #include "dengine/shader/GridShader.h"
 #include "dengine/shader/PhongShader.h"
 #include "dengine/shader/ScreenOverlayShader.h"
@@ -20,29 +22,15 @@ bool Shaders::load()
 
 	bool ok = true;
 
-	// clang-format off
-	m_phongShader =	loadShader<PhongShader>(ok,
-		"Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl"
-	);
-	m_colorShader =	loadShader<ColorShader>(ok,
-		"Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl"
-	);
-	m_gridShader = loadShader<GridShader>(ok,
-		"Data/Shaders/gridVert.glsl", "Data/Shaders/gridFrag.glsl"
-	);
-	m_wboitCompositeShader = loadShader<WBOITCompositeShader>(ok,
-		"Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl"
-	);
-	m_boxBlurShader =	loadShader<BoxBlurShader>(ok,
-		"Data/Shaders/basicVert.glsl", "Data/Shaders/boxBlurFrag.glsl"
-	);
-	m_selectionCompositeShader = loadShader<SelectionCompositeShader>(ok,
-		"Data/Shaders/basicVert.glsl", "Data/Shaders/selectionCompositeFrag.glsl"
-	);
-	m_screenOverlayShader =	loadShader<ScreenOverlayShader>(ok,
-		"Data/Shaders/basicVert.glsl", "Data/Shaders/screenOverlayFrag.glsl"
-	);
-	// clang-format on
+	ok &= createShader<PhongShader>("Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl");
+	ok &= createShader<ColorShader>("Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
+	ok &= createShader<DepthShader>("Data/Shaders/depthVert.glsl", "");
+	ok &= createShader<ShadowShader>("Data/Shaders/shadowVert.glsl", "Data/Shaders/shadowFrag.glsl");
+	ok &= createShader<GridShader>("Data/Shaders/gridVert.glsl", "Data/Shaders/gridFrag.glsl");
+	ok &= createShader<WBOITCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl");
+	ok &= createShader<BoxBlurShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/boxBlurFrag.glsl");
+	ok &= createShader<SelectionCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/selectionCompositeFrag.glsl");
+	ok &= createShader<ScreenOverlayShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/screenOverlayFrag.glsl");
 
 	loaded = true;
 	return ok;
@@ -57,17 +45,10 @@ bool Shaders::reload()
 	}
 
 	RMI.m_forceReload = true;
-
 	bool ok = true;
-	ok &= reloadShader(*m_phongShader, "Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl");
-	ok &= reloadShader(*m_colorShader, "Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
-	ok &= reloadShader(*m_gridShader, "Data/Shaders/gridVert.glsl", "Data/Shaders/gridFrag.glsl");
-	ok &= reloadShader(*m_wboitCompositeShader, "Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl");
-	ok &= reloadShader(*m_boxBlurShader, "Data/Shaders/basicVert.glsl", "Data/Shaders/boxBlurFrag.glsl");
-	ok &= reloadShader(*m_selectionCompositeShader, "Data/Shaders/basicVert.glsl",
-	                   "Data/Shaders/selectionCompositeFrag.glsl");
-	ok &= reloadShader(*m_screenOverlayShader, "Data/Shaders/basicVert.glsl", "Data/Shaders/screenOverlayFrag.glsl");
-
+	for (const auto& [key, value] : m_shaders) {
+		ok &= reloadShader(*value, value->m_vertSource, value->m_fragSource);
+	}
 	RMI.m_forceReload = false;
 
 	return ok;

@@ -13,6 +13,7 @@ namespace Dg
 {
 class ColorShader;
 class PhongShader;
+class DepthShader;
 class GridShader;
 class FrustumShader;
 class WBOITCompositeShader;
@@ -22,7 +23,7 @@ class ScreenOverlayShader;
 
 class Shaders
 {
-public:
+  public:
 	static Shaders& instance()
 	{
 		static Shaders instance; // Guaranteed to be destroyed.
@@ -31,10 +32,10 @@ public:
 		return instance;
 	}
 
-private:
+  private:
 	Shaders() = default;
 
-public:
+  public:
 	Shaders(Shaders const&) = delete;
 	void operator=(Shaders const&) = delete;
 
@@ -43,25 +44,81 @@ public:
 	bool load();
 	bool reload();
 
-	std::shared_ptr<PhongShader> m_phongShader;
-	std::shared_ptr<ColorShader> m_colorShader;
-	std::shared_ptr<GridShader> m_gridShader;
-	std::shared_ptr<FrustumShader> m_frustumShader;
-	std::shared_ptr<WBOITCompositeShader> m_wboitCompositeShader;
-	std::shared_ptr<BoxBlurShader> m_boxBlurShader;
-	std::shared_ptr<SelectionCompositeShader> m_selectionCompositeShader;
-	std::shared_ptr<ScreenOverlayShader> m_screenOverlayShader;
+	//	std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaders;
+	std::unordered_map<std::size_t, std::shared_ptr<Shader>> m_shaders;
 
-private:
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
+	bool createShader(const std::string& vertSource)
+	{
+		return createShader<T>(vertSource, "");
+	}
+
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
+	bool createShader(const std::string& vertSource, const std::string& fragSource)
+	{
+		return createShader<T>(vertSource, fragSource, "");
+	}
+
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
+	bool createShader(const std::string& vertSource, const std::string& fragSource, const std::string& geoSource)
+	{
+		std::size_t type = typeid(T).hash_code();
+		if (m_shaders.contains(type))
+		{
+			LOG_ERROR("[SHADERS] Cannot create shader '{}'! A shader with that name already exists.");
+			return false;
+		}
+
+		bool success;
+		auto shader = loadShader<T>(success, vertSource, fragSource, geoSource);
+		if (!success)
+		{
+			LOG_ERROR("[SHADERS] Failed to create shader '{}'!");
+			return false;
+		}
+		m_shaders[type] = shader;
+		return true;
+	}
+
 	template <typename T>
+	std::shared_ptr<T> getShader()
+	{
+		auto it = m_shaders.find(typeid(T).hash_code());
+		if (it == m_shaders.end())
+		{
+			return nullptr;
+		}
+		return std::static_pointer_cast<T>(it->second);
+	}
+
+	template <typename T>
+	T* getShaderPtr()
+	{
+		return getShader<T>().get();
+	}
+
+  private:
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
 	std::shared_ptr<T> loadShader(bool& success, const std::string& vertSource, const std::string& fragSource)
 	{
-		GLuint id = RMI.shader(vertSource, fragSource);
+		return loadShader<T>(success, vertSource, fragSource, "");
+	}
+
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
+	std::shared_ptr<T> loadShader(bool& success, const std::string& vertSource, const std::string& fragSource,
+	                              const std::string& geoSource)
+	{
+		GLuint id = RMI.shaderG(vertSource, fragSource, geoSource);
 		if (id == 0)
 		{
 			success = false;
 		}
-		return std::make_shared<T>(id);
+		auto shader = std::make_shared<T>(id);
+		shader->m_vertSource = vertSource;
+		shader->m_fragSource = fragSource;
+		shader->m_geoSource = geoSource;
+		success = true;
+		return shader;
 	}
 
 	bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource);

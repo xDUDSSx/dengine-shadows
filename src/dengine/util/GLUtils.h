@@ -73,12 +73,21 @@ GLuint createProgram(const std::vector<GLuint>& shaderList);
 
 namespace Debug
 {
-/// returns human readable representation of debug source src
+/// Returns human readable representation of debug source src
 const char* sourceToString(GLenum src);
-/// returns human readable representation of debug type
+/// Returns human readable representation of debug type
 const char* typeToString(GLenum type);
-/// returns human readable representation of debug severity
+/// Returns human readable representation of debug severity
 const char* severityToString(GLenum severity);
+/**
+ * Tries to print as nice as possible backtrace of the current call stack.
+ *
+ * \warning The function will chop out parts of the stack. For example the function itself will not appear in the backtrace.
+ * \warning The format or verbosity may be platform dependent.
+ * \author Tomas Barak, pgr-framework DCGI CVUT FEL
+ */
+void printBacktrace();
+
 } // namespace Debug
 
 } // namespace GLUtils

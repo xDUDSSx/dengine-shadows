@@ -10,12 +10,12 @@ class PhongShader;
 
 class TexturedObject : public GameObject
 {
-public:
+  public:
 	glm::vec3 m_tint{1.0f};
 	float m_tintStrength{1.0f};
 
-	explicit TexturedObject(Core::Mesh* mesh, PhongShader* shader = Dg::Shaders::instance().m_phongShader.get());
+	explicit TexturedObject(Dg::Mesh* mesh, PhongShader* shader = Dg::Shaders::instance().getShader<PhongShader>().get());
 
-	void render(Shader* shader, glm::mat4 view, glm::mat4 projection, bool silhouette) override;
+	void prepareRenderContext(Renderer::RenderContext& context) override;
 };
 } // namespace Dg

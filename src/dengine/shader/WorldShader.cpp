@@ -27,15 +27,18 @@ void WorldShader::init(bool initSuperclass)
 void WorldShader::setUniforms()
 {
 	glm::mat4 pvm = m_projection * m_view * m_model;
-	const glm::mat4 modelRotationMatrix =
-	    glm::mat4(m_model[0], m_model[1], m_model[2], glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelRotationMatrix));
-
 	glUniformMatrix4fv(pvmMatrixId, 1, GL_FALSE, glm::value_ptr(pvm));
-	glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, glm::value_ptr(m_projection));
-	glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, glm::value_ptr(m_view));
-	glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, glm::value_ptr(m_model));
-	glUniformMatrix4fv(normalMatrixId, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+
+	if (!m_pvmOnly)
+	{
+		glUniformMatrix4fv(projectionMatrixId, 1, GL_FALSE, glm::value_ptr(m_projection));
+		glUniformMatrix4fv(viewMatrixId, 1, GL_FALSE, glm::value_ptr(m_view));
+		glUniformMatrix4fv(modelMatrixId, 1, GL_FALSE, glm::value_ptr(m_model));
+
+		const glm::mat4 modelRotationMatrix = glm::mat4(m_model[0], m_model[1], m_model[2], glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		glm::mat4 normalMatrix = glm::transpose(glm::inverse(modelRotationMatrix));
+		glUniformMatrix4fv(normalMatrixId, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+	}
 
 	if (supportsWboit() && m_wboit)
 	{

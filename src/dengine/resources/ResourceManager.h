@@ -10,9 +10,9 @@
 #include "dengine/resources/Mesh.h"
 
 // TODO: (DR) Is static access like this the right way to go? Even if it refers to a static application member variable.
-#define RMI Core::ResourceManager::instance()
+#define RMI Dg::ResourceManager::instance()
 
-namespace Core
+namespace Dg
 {
 
 enum class ResourceType
@@ -78,8 +78,8 @@ class Resource
  * Finally a resource can be marked as default and returned using
  * getDefaultResources().
  *
- * An RM define is provided to shorten "Core::ResourceManager"
- * An RMI define shortens "Core::ResourceManager::instance()"
+ * An RM define is provided to shorten "Dg::ResourceManager"
+ * An RMI define shortens "Dg::ResourceManager::instance()"
  */
 class ResourceManager
 {
@@ -284,4 +284,4 @@ class ResourceManager
 	void dispose();
 	void disposeResource(std::shared_ptr<Resource>& resource);
 };
-} // namespace Core
+} // namespace Dg

@@ -35,3 +35,5 @@ std::string enumName(T val)
 #define D_ABORT(message)                                                                                                         \
 	LOG_FATAL(message);                                                                                                          \
 	std::abort()
+
+#define IS_BASE_OF(B, T) typename std::enable_if<std::is_base_of<B, T>::value, bool>::type = true

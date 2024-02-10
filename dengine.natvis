@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+<!--    <Type Name="DgTest::Entity">-->
+<!--        <DisplayString>{{ test }}</DisplayString>-->
+<!--        <Expand>-->
+<!--            <Item Name="[size]">8</Item>-->
+<!--            <Item Name="[capacity]">"Test"</Item>-->
+<!--&lt;!&ndash;            <ArrayItems>&ndash;&gt;-->
+<!--&lt;!&ndash;                <Size>_Mylast - _Myfirst</Size>&ndash;&gt;-->
+<!--&lt;!&ndash;                <ValuePointer>_Myfirst</ValuePointer>&ndash;&gt;-->
+<!--&lt;!&ndash;            </ArrayItems>&ndash;&gt;-->
+<!--        </Expand>-->
+<!--    </Type>-->
+</AutoVisualizer>

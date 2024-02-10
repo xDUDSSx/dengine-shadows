@@ -5,17 +5,30 @@ using namespace Dg;
 
 #include "dengine/shader/ColorShader.h"
 
-ColoredObject::ColoredObject(Core::Mesh* mesh, ColorShader* shader) : GameObject(mesh, shader)
+ColoredObject::ColoredObject(Dg::Mesh* mesh, ColorShader* shader) : GameObject(mesh, shader)
 {
 	// Empty
 }
 
-void ColoredObject::render(Shader* shader, glm::mat4 view, glm::mat4 projection, bool silhouette)
+void ColoredObject::prepareRenderContext(Renderer::RenderContext& context)
 {
-	ColorShader* colorShader = static_cast<ColorShader*>(shader);
-	colorShader->m_useSingleColor = m_useSingleColor || silhouette;
-	colorShader->m_singleColor = silhouette ? m_highlightColor : m_singleColor;
-	GameObject::render(shader, view, projection, silhouette);
+	GameObject::prepareRenderContext(context);
+
+	switch (context.m_renderType)
+	{
+		case Renderer::SILHOUETTE:
+		case Renderer::NORMAL:
+			{
+				// TODO: (DR) Assertion checking the shader type
+				bool silhouette = context.m_renderType == Renderer::RenderType::SILHOUETTE;
+				ColorShader* colorShader = static_cast<ColorShader*>(context.m_shader);
+				colorShader->m_useSingleColor = m_useSingleColor || silhouette;
+				colorShader->m_singleColor = silhouette ? m_highlightColor : m_singleColor;
+			}
+			break;
+		default:
+			break;
+	}
 }
 
 const glm::vec3& ColoredObject::getColor() const

@@ -13,10 +13,13 @@
 #include "dengine/shader/ScreenOverlayShader.h"
 #include "dengine/shader/SelectionCompositeShader.h"
 #include "dengine/shader/WBOITCompositeShader.h"
+#include "dengine/shader/DepthShader.h"
+#include "dengine/renderer/Renderer.h"
 
 #include "SceneRenderTarget.h"
 #include "dengine/util/HSLColor.h"
 #include "dengine/shader/Shaders.h"
+#include "dengine/shader/ShadowShader.h"
 
 namespace Dg
 {
@@ -52,16 +55,16 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 	unsigned int samples = renderOptions.samples;
 
 	// Retrieve framebuffers from render target and try to update them with render settings
-	Ptr<Framebuffer> mainFBO = renderTarget.getFramebuffer(0).lock();
-	Ptr<Framebuffer> transparentFBO = renderTarget.getFramebuffer(1).lock();
+	Ptr<Framebuffer> mainFBO = renderTarget.getFramebuffer("main").lock();
+	Ptr<Framebuffer> transparentFBO = renderTarget.getFramebuffer("transparent").lock();
 	Ptr<Framebuffer> selectionFBO = nullptr;
 	Ptr<Framebuffer> selectionBlurFBO = nullptr;
 	Ptr<Framebuffer> selectionBlurSecondPassFBO = nullptr;
 	if (drawSelection)
 	{
-		selectionFBO = renderTarget.getFramebuffer(2).lock();
-		selectionBlurFBO = renderTarget.getFramebuffer(3).lock();
-		selectionBlurSecondPassFBO = renderTarget.getFramebuffer(4).lock();
+		selectionFBO = renderTarget.getFramebuffer("selection").lock();
+		selectionBlurFBO = renderTarget.getFramebuffer("selectionBlurFirstPass").lock();
+		selectionBlurSecondPassFBO = renderTarget.getFramebuffer("selectionBlurSecondPass").lock();
 	}
 
 	mainFBO->setMultisampled(multisample, samples);
@@ -72,6 +75,22 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 	if (drawSelection)
 	{
 		selectionFBO->setMultisampled(multisample, samples);
+	}
+
+	// Draw shadow maps
+	Ptr<Framebuffer> shadowFBO;
+	glm::mat4 lightMatrix;
+	glm::vec3 lightPos;
+	if (renderOptions.shadows)
+	{
+		float near_plane = 1.0f, far_plane = 20.f;
+		lightPos = glm::vec3(-5.0f, 8.0f, -3.0f);
+		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+		glm::mat4 lightView =
+		    glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		lightMatrix = lightProjection * lightView;
+
+		shadowFBO = drawShadowBuffer(lightPos, far_plane, lightView, lightProjection, renderTarget, displayOptions);
 	}
 
 	// Draw the scene
@@ -97,7 +116,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			// Setup phong shader, later, shaders are switched for each object
-			PhongShader* phongShader = Shaders::instance().m_phongShader.get();
+			PhongShader* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
@@ -105,7 +124,6 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			m_unorderedTransparentEntities.clear();
 			for (auto& entity : m_entities)
 			{
-				entity->m_wboit = false; // Not using wboit for opaque pass
 				if (!entity->m_visible)
 					continue;
 				if (!displayOptions.shouldDraw(*entity))
@@ -125,7 +143,9 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					{
 						glStencilMask(0x00);
 					}
-					entity->render(view, projection);
+					Renderer::RenderContext context = entity->prepareRenderContext();
+					context.m_wboit = false; // Not using wboit for opaque pass
+					entity->render(view, projection, context);
 				}
 			}
 		}
@@ -165,8 +185,6 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			// Render transparent objects with their WBOIT flag enabled (enabled after opaque pass)
 			for (auto& entity : m_unorderedTransparentEntities)
 			{
-				entity->m_wboit = true;
-				entity->m_wboitFunc = renderOptions.wboitFunc;
 				if (entity->m_selectable)
 				{
 					glStencilMask(0xFF);
@@ -176,7 +194,10 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 				{
 					glStencilMask(0x00);
 				}
-				entity->render(view, projection);
+				Renderer::RenderContext context = entity->prepareRenderContext();
+				context.m_wboit = true;
+				context.m_wboitFunc = renderOptions.wboitFunc;
+				entity->render(view, projection, context);
 			}
 		}
 		transparentFBO->end(false);
@@ -194,7 +215,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-			auto wboitCompositeShader = Shaders::instance().m_wboitCompositeShader;
+			auto wboitCompositeShader = Shaders::instance().getShaderPtr<WBOITCompositeShader>();
 			wboitCompositeShader->use();
 			wboitCompositeShader->accumulationTextureID = transparentFBO->getColorTexture(1);
 			wboitCompositeShader->revealageTextureID = transparentFBO->getColorTexture(2);
@@ -229,17 +250,21 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			// Setup phong shader, later, shaders are switched for each object
-			PhongShader* phongShader = Shaders::instance().m_phongShader.get();
+			PhongShader* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
+			// TODO: (DR) Turn texture bindings into a generic Shader method
+			phongShader->m_shadowMapId = shadowFBO->getDepthAttachment()->m_id;
+//			phongShader->m_lightMatrix = lightMatrix;
+//			phongShader->m_lightPos = lightPos;
+			phongShader->m_lightView = lightMatrix;
 			phongShader->use();
-			m_lighting->setUniforms(*Shaders::instance().m_phongShader);
+			m_lighting->setUniforms(*phongShader);
 
 			m_unorderedTransparentEntities.clear();
 			m_explicitTransparencyOrderEntitiesFirst.clear();
 			m_explicitTransparencyOrderEntitiesLast.clear();
 			for (auto& entity : m_entities)
 			{
-				entity->m_wboit = false; // Not using wboit
 				if (!entity->m_visible)
 					continue;
 				if (!displayOptions.shouldDraw(*entity))
@@ -257,7 +282,9 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					{
 						glStencilMask(0x00);
 					}
-					entity->render(view, projection);
+					Renderer::RenderContext context = entity->prepareRenderContext();
+					context.m_wboit = false; // Not using wboit for opaque pass
+					entity->render(view, projection, context);
 					continue;
 				}
 				// Store transparent entities for sorting
@@ -383,14 +410,22 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					                        .darken(darkenFactor)
 					                        .getRGB();
 					auto originalColor = entity->m_highlightColor;
+
+					Renderer::RenderContext context;
+					context.m_renderType = Renderer::RenderType::SILHOUETTE;
 					entity->m_highlightColor = glm::vec3(coveredColor[0], coveredColor[1], coveredColor[2]);
-					entity->render(view, projection, true);
+					entity->prepareRenderContext(context);
+					context.m_wboit = false; // Not using wboit for opaque pass
+					entity->render(view, projection, context);
 					entity->m_highlightColor = originalColor;
 				}
 				else
 				{
 					// Simply render the silhouette with the desired highlight color
-					entity->render(view, projection, true);
+					Renderer::RenderContext context;
+					context.m_renderType = Renderer::RenderType::SILHOUETTE;
+					entity->prepareRenderContext(context);
+					entity->render(view, projection, context);
 				}
 			}
 
@@ -398,15 +433,17 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			//  Note that many attempts were made to make this effect happen within a single pass using a shader, but
 			//  ultimately this is the most simple and robust solution I've found.
 			// 	Unfortunately with multisampled buffers it requires the selection fbos are multisampled as well in order
-			// to
-			//  compare depth values properly.
+			//  to compare depth values properly.
 			if (atLeastOneEntityHighlightUsesDepth && useDepth)
 			{
 				// Iterate over highlighted entities that use depth and render their uncovered portions
 				glDepthFunc(GL_LEQUAL);
 				for (auto& entity : m_highlightedEntities)
 				{
-					entity->render(view, projection, true);
+					Renderer::RenderContext context;
+					context.m_renderType = Renderer::RenderType::SILHOUETTE;
+					entity->prepareRenderContext(context);
+					entity->render(view, projection, context);
 				}
 			}
 		}
@@ -414,7 +451,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 
 		if (atLeastOneEntityHighlighted)
 		{
-			auto boxBlurShader = Shaders::instance().m_boxBlurShader;
+			auto boxBlurShader = Shaders::instance().getShaderPtr<BoxBlurShader>();
 			int kernelSize = renderOptions.highlight.kernelSize;
 			float blurFactor = renderOptions.highlight.downscaleFactor;
 			int blurWidth = static_cast<int>(blurFactor * width);
@@ -468,7 +505,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 				glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
 				glStencilMask(0x00);
 
-				auto selectionCompositeShader = Shaders::instance().m_selectionCompositeShader;
+				auto selectionCompositeShader = Shaders::instance().getShaderPtr<SelectionCompositeShader>();
 				selectionCompositeShader->use();
 				selectionCompositeShader->m_sourceTextureId = selectionBlurSecondPassFBO->getColorTexture(0);
 				selectionCompositeShader->m_resolution = glm::vec2(width, height);
@@ -489,7 +526,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			{
 				glEnable(GL_BLEND);
 
-				auto screenOverlayShader = Shaders::instance().m_screenOverlayShader;
+				auto screenOverlayShader = Shaders::instance().getShaderPtr<ScreenOverlayShader>();
 				screenOverlayShader->use();
 				screenOverlayShader->m_sourceTextureId = selectionFBO->getColorTexture(0);
 				screenOverlayShader->setUniforms();
@@ -518,13 +555,13 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 	mainFramebuffer->setDepthAttachment(DepthAttachment(true, mainFramebuffer->getWidth(), mainFramebuffer->getHeight(), false));
 	//	mainFramebuffer->setDepthAttachment(
 	//	    DepthAttachment(GL_DEPTH24_STENCIL8, true, mainFramebuffer->getWidth(), mainFramebuffer->getHeight()));
-	renderTarget->addFramebuffer(mainFramebuffer);
+	renderTarget->addFramebuffer("main", mainFramebuffer);
 
 	Ptr<Framebuffer> transparentFramebuffer =
 	    std::shared_ptr<Framebuffer>(Framebuffer::createDefault(options.multisample, options.samples, options.framebufferAlpha));
 	transparentFramebuffer->addColorAttachment(ColorAttachment(GL_RGBA16F, GL_RGBA, 100, 100, GL_HALF_FLOAT));
 	transparentFramebuffer->addColorAttachment(ColorAttachment(GL_R16F, GL_RED, 100, 100, GL_HALF_FLOAT));
-	renderTarget->addFramebuffer(transparentFramebuffer);
+	renderTarget->addFramebuffer("transparent", transparentFramebuffer);
 
 	if (options.selection)
 	{
@@ -537,14 +574,14 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 		c1.m_textureWrapS = GL_CLAMP_TO_EDGE;
 		c1.m_textureWrapT = GL_CLAMP_TO_EDGE;
 		selectionFBO->addColorAttachment(c1);
-		renderTarget->addFramebuffer(selectionFBO);
+		renderTarget->addFramebuffer("selection", selectionFBO);
 
 		Ptr<Framebuffer> selectionBlurFirstPassFBO = std::make_shared<Framebuffer>(100, 100, false, 1);
 		auto c2 = ColorAttachment(GL_RGBA16F, GL_RGBA, 100, 100, GL_HALF_FLOAT);
 		c2.m_textureWrapS = GL_CLAMP_TO_EDGE;
 		c2.m_textureWrapT = GL_CLAMP_TO_EDGE;
 		selectionBlurFirstPassFBO->addColorAttachment(c2);
-		renderTarget->addFramebuffer(selectionBlurFirstPassFBO);
+		renderTarget->addFramebuffer("selectionBlurFirstPass", selectionBlurFirstPassFBO);
 
 		Ptr<Framebuffer> selectionBlurSecondPassFBO = std::make_shared<Framebuffer>(100, 100, false, 1);
 		auto c3 = ColorAttachment(GL_RGBA16F, GL_RGBA, 100, 100, GL_HALF_FLOAT);
@@ -553,7 +590,15 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 		c3.m_textureWrapS = GL_CLAMP_TO_EDGE;
 		c3.m_textureWrapT = GL_CLAMP_TO_EDGE;
 		selectionBlurSecondPassFBO->addColorAttachment(c3);
-		renderTarget->addFramebuffer(selectionBlurSecondPassFBO);
+		renderTarget->addFramebuffer("selectionBlurSecondPass", selectionBlurSecondPassFBO);
+	}
+
+	if (options.shadows)
+	{
+		auto d = DepthAttachment(false, 100, 100, false);
+		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024*4, 1024*4);
+		shadowFbo->setDepthAttachment(d);
+		renderTarget->addFramebuffer("shadows", shadowFbo);
 	}
 
 	return renderTarget;
@@ -601,7 +646,7 @@ void Scene::renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection
 		{
 			glStencilMask(0x00);
 		}
-		entity->render(view, projection);
+		entity->render(view, projection, entity->prepareRenderContext());
 		if (entity->m_backFaceCull)
 		{
 			glDisable(GL_CULL_FACE);
@@ -636,12 +681,12 @@ void Scene::processSelection(SceneRenderTarget& renderTarget, glm::vec2 mousePos
 		if (renderTarget.getRenderOptions().wboit)
 		{
 			// Use stencil buffer of the transparent pass if wboit is enabled
-			framebuffer = renderTarget.getFramebuffer(1).lock();
+			framebuffer = renderTarget.getFramebuffer("transparent").lock();
 		}
 		else
 		{
 			// Use the main FBO
-			framebuffer = renderTarget.getFramebuffer(0).lock();
+			framebuffer = renderTarget.getFramebuffer("main").lock();
 		}
 		if (framebuffer->isMultisampled())
 		{
@@ -686,6 +731,73 @@ void Scene::triggerSelectionCallbacks(Entity* entity)
 	{
 		callback(entity);
 	}
+}
+
+Ptr<Framebuffer> Scene::drawShadowBuffer(glm::vec3 lightPos, float far_plane, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
+                                         const DisplayOptions& displayOptions)
+{
+	const RenderOptions& renderOptions = renderTarget.getRenderOptions();
+	// TODO: Shadow rendering should probably be handled per light
+	//   Either perform shadow rendering within Light objects? (that doesn't sound right, not really a light's responsibility)
+	//   Or create some separate system ShadowManager, that will keep track of lights and their shadow buffers separately
+	//   (preferrable)
+	// Shadows phase 1
+	if (renderOptions.shadows)
+	{
+		// TODO: Render the scene from POV of the light
+		// TODO: This method is huge, it should be split up into smaller ones
+
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+		glDepthMask(GL_TRUE);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+		glStencilMask(0xFF);
+
+		Ptr<Framebuffer> shadowFBO = renderTarget.getFramebuffer("shadows").lock();
+		shadowFBO->start();
+		{
+			glClear(GL_DEPTH_BUFFER_BIT);
+
+			glEnable(GL_CULL_FACE);
+			glCullFace(GL_FRONT);
+
+			// Setup phong shader, later, shaders are switched for each object
+			ShadowShader* shadowShader = Shaders::instance().getShaderPtr<ShadowShader>();
+			for (auto& entity : m_entities)
+			{
+				entity->m_wboit = false; // Not using wboit
+				if (!entity->m_visible)
+					continue;
+				if (!displayOptions.shouldDraw(*entity))
+					continue;
+
+				// Render all entities
+
+				Renderer::RenderContext context;
+				context.m_renderType = Renderer::RenderType::DEPTH;
+//				context.m_renderType = Renderer::RenderType::CUSTOM;
+//				shadowShader->m_lightPos = lightPos;
+//				shadowShader->m_zFar = far_plane;
+//				shadowShader->getSunPositionFromViewMatrix(view);
+//				context.m_shader = shadowShader;
+				entity->prepareRenderContext(context);
+				if (!entity->m_shadowCullFront)
+					glDisable(GL_CULL_FACE);
+				entity->render(view, projection, context);
+				if (!entity->m_shadowCullFront)
+					glEnable(GL_CULL_FACE);
+			}
+			glDisable(GL_CULL_FACE);
+		}
+		shadowFBO->end();
+		return shadowFBO;
+	}
+	return nullptr;
+
+	// Shadows phase 2
 }
 
 } // namespace Dg

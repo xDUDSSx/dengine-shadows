@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Core
+namespace Dg
 {
 /**
  * Base class for objects that are the actual data managed by a ResourceManager.
@@ -12,4 +12,4 @@ public:
 	size_t m_resourceId{0}; ///< Resource ID of an object
 	                        ///< An identifier used by a ResourceManager
 };
-} // namespace Core
+} // namespace Dg

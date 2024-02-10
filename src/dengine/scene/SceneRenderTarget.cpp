@@ -1,7 +1,8 @@
-
 #include "SceneRenderTarget.h"
 
-#include <stdexcept>
+#include <utility>
+
+#include "dengine/platform/Logger.h"
 
 using namespace Dg;
 
@@ -12,19 +13,7 @@ std::weak_ptr<Framebuffer> SceneRenderTarget::getOutputFramebuffer()
 
 void SceneRenderTarget::setOutputFramebuffer(std::weak_ptr<Framebuffer> framebuffer)
 {
-	outputFramebuffer = framebuffer;
-}
-
-std::weak_ptr<Framebuffer> SceneRenderTarget::getFramebuffer(unsigned int index)
-{
-	try
-	{
-		return std::weak_ptr<Framebuffer>(m_framebuffers.at(index));
-	}
-	catch (const std::out_of_range&)
-	{
-		return std::weak_ptr<Framebuffer>();
-	}
+	outputFramebuffer = std::move(framebuffer);
 }
 
 const RenderOptions& SceneRenderTarget::getRenderOptions() const
@@ -37,7 +26,23 @@ void SceneRenderTarget::setRenderOptions(const RenderOptions& renderOptions)
 	this->renderOptions = renderOptions;
 }
 
-void SceneRenderTarget::addFramebuffer(std::shared_ptr<Framebuffer> framebuffer)
+std::weak_ptr<Framebuffer> SceneRenderTarget::getFramebuffer(const std::string& name)
 {
-	this->m_framebuffers.push_back(framebuffer);
+	auto it = m_framebuffers.find(name);
+	if (it != m_framebuffers.end())
+	{
+		return it->second;
+	}
+	return {};
+}
+
+void SceneRenderTarget::addFramebuffer(const std::string& name, const std::shared_ptr<Framebuffer>& framebuffer)
+{
+	auto it = m_framebuffers.find(name);
+	if (it != m_framebuffers.end())
+	{
+		LOG_ERROR("SceneRenderTarget: Cannot create framebuffer! A framebuffer with the name '{}' already exists.", name);
+		return;
+	}
+	this->m_framebuffers.insert(std::make_pair(name, framebuffer));
 }

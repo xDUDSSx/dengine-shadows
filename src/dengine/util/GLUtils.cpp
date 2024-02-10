@@ -3,6 +3,14 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <DbgHelp.h>
+#pragma comment(lib, "Dbghelp")
+#elif defined(__linux__)
+#include <execinfo.h>
+#endif
+
 namespace GLUtils
 {
 
@@ -33,9 +41,9 @@ void checkGLError(const char* where, int line)
 	default:;
 	}
 	if (where == 0 || *where == 0)
-		LOG_ERROR("GL error occurred: {}", errString)
+		LOG_ERROR("GL error occurred: {}", errString);
 	else
-		LOG_ERROR("GL error occurred in {}:{}: {}", where, line, errString)
+		LOG_ERROR("GL error occurred in {}:{}: {}", where, line, errString);
 }
 
 bool GLUtils::loadTexImage2D(const std::string& fileName, GLenum target)
@@ -289,6 +297,64 @@ const char* severityToString(GLenum severity)
 		return "<unknown>";
 	}
 }
+
+/**
+ * @author Tomas Barak
+ * @copyright Taken from the pgr-framework developed by DCGI CTU FEL
+ */
+void printBacktrace()
+{
+	const int SIZE = 100;
+	const int NAME_SIZE = 256;
+#if defined(_WIN32)
+	HANDLE process = GetCurrentProcess();
+	SymSetOptions(SYMOPT_LOAD_LINES);
+	SymInitialize(process, NULL, TRUE);
+
+	void* stack[SIZE];
+	unsigned short frames = CaptureStackBackTrace(0, SIZE, stack, NULL);
+	SYMBOL_INFO* symbol = (SYMBOL_INFO*) calloc(sizeof(SYMBOL_INFO) + NAME_SIZE * sizeof(char), 1);
+	symbol->MaxNameLen = NAME_SIZE;
+	symbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+
+	int counter = 0;
+	for (unsigned short i = 0; i < frames; i++)
+	{
+		SymFromAddr(process, (DWORD64) (stack[i]), 0, symbol);
+		IMAGEHLP_LINE64 line;
+		line.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+		DWORD dwDisplacement;
+		if (!strstr(symbol->Name, __FUNCTION__) && !strstr(symbol->Name, "pgr::debugCallback") &&
+		    SymGetLineFromAddr64(process, (DWORD64) (stack[i]), &dwDisplacement, &line))
+		{
+			counter++;
+			LOG_WARN("[OGL DEBUG] {} - {}():{}", counter, symbol->Name, ::std::to_string(line.LineNumber));
+		}
+		if (strcmp(symbol->Name, "main") == 0)
+			break;
+	}
+
+	free(symbol);
+#elif defined(__linux__)
+	int j;
+	void* buffer[SIZE];
+	char** strings;
+
+	int nptrs = backtrace(buffer, SIZE);
+	strings = backtrace_symbols(buffer, nptrs);
+	if (strings == NULL)
+	{
+		LOG_ERROR("error in backtrace_symbols");
+		return;
+	}
+	for (j = 0; j < nptrs; j++)
+		LOG_WARN("{}", strings[j]);
+	free(strings);
+#else
+	LOG_WARN("backtrace not supported on this platform");
+#endif
+}
+
 } // namespace Debug
 
 } // namespace GLUtils

@@ -30,8 +30,9 @@ bool SimpleApplication::onInit()
 
 	// Create render target
 	Dg::RenderOptions renderOptions;
-	renderOptions.multisample = true;
+	renderOptions.multisample = false;
 	renderOptions.selection = true;
+	renderOptions.shadows = true;
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -58,6 +59,14 @@ void SimpleApplication::onDisplay()
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderTarget->getOutputFramebuffer().lock()->getId());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+	ImGui::Begin("Framebuffers", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	GLuint texture = m_renderTarget->getFramebuffer("shadows").lock()->getDepthAttachment()->m_id;
+//	GLuint texture = m_renderTarget->getFramebuffer(5).lock()->getDepthAttachment()->m_id;
+//	GLuint texture = m_renderTarget->getOutputFramebuffer().lock()->getColorTexture();
+	// the uv coordinates flips the picture, since it was upside down at first
+	ImGui::Image((void*) (intptr_t) texture, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::End();
 }
 
 void SimpleApplication::onUpdate(float dt)

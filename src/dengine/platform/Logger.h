@@ -1,17 +1,16 @@
 #pragma once
 
 #include "spdlog/spdlog.h"
-#include "spdlog/spdlog-inl.h"
 
 #ifndef NDEBUG
-#define LOG_DEBUG(...) spdlog::debug(__VA_ARGS__);
+#define LOG_DEBUG(...) spdlog::get("console")->debug(__VA_ARGS__)
 #else
 #define LOG_DEBUG(...)
 #endif
-#define LOG_INFO(...) spdlog::info(__VA_ARGS__);
-#define LOG_WARN(...) spdlog::warn(__VA_ARGS__);
-#define LOG_ERROR(...) spdlog::error(__VA_ARGS__);
-#define LOG_FATAL(...) spdlog::critical(__VA_ARGS__);
+#define LOG_INFO(...) spdlog::get("console")->info(__VA_ARGS__)
+#define LOG_WARN(...) spdlog::get("stderr")->warn(__VA_ARGS__)
+#define LOG_ERROR(...) spdlog::get("stderr")->error(__VA_ARGS__)
+#define LOG_FATAL(...) spdlog::get("stderr")->critical(__VA_ARGS__)
 
 class Logger
 {

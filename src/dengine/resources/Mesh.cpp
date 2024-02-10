@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-using namespace Core;
+using namespace Dg;
 
 #include <stdexcept>
 

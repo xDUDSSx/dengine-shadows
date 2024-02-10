@@ -10,7 +10,11 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 normalMatrix;
 
+// Shadow mapping
+uniform mat4 u_lightMatrix;
+
 out vec3 FragPos;
+out vec4 FragPosWorld;
 out vec2 TexCoords;
 out vec3 Normal;
 out vec3 Tangent;
@@ -22,15 +26,17 @@ out vec3 Binormal;
 //https://learnopengl.com/Advanced-Lighting/Normal-Mapping
 
 void main() {
+	// TODO: (DR) This could be optimized
 	gl_Position = pvmMatrix * vec4(aPos, 1.0);
 
-	FragPos = (viewMatrix * modelMatrix * vec4(aPos, 1.0)).xyz;
-	
+	FragPosWorld = modelMatrix * vec4(aPos, 1.0);
+	FragPos = (viewMatrix * FragPosWorld).xyz;
+
 	Normal = normalize(viewMatrix * normalMatrix * vec4(aNormal, 0.0)).xyz;
 	
 	//Remaining view space normal basis vectors, used to convert from tangent space to view space in frag shader
 	Tangent = normalize(viewMatrix * normalMatrix * vec4(aTangent, 0.0)).xyz;
-	Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal); //Gram–Schmidt process
+	Tangent = normalize(Tangent - dot(Tangent, Normal) * Normal); //Gram-Schmidt process
 	Binormal = cross(Normal, Tangent); //Get third basis vector as a cross of the two existing orthogonal ones
 
 	TexCoords = aTexCoords;

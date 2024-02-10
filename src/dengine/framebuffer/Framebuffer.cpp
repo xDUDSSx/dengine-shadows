@@ -38,25 +38,12 @@ Framebuffer* Framebuffer::createDefault(int width, int height, bool multisample,
 	return framebuffer;
 }
 
-Framebuffer::Framebuffer() : Framebuffer(m_multisample, m_samples)
-{
-	// Empty
-}
-
-Framebuffer::Framebuffer(bool multisample, unsigned int samples) : Framebuffer(m_width, m_height, multisample, samples)
-{
-	// Empty
-}
-
-Framebuffer::Framebuffer(int width, int height) : Framebuffer(width, height, m_multisample, m_samples)
-{
-	// Empty
-}
-
+Framebuffer::Framebuffer() = default;
+Framebuffer::Framebuffer(bool multisample, unsigned int samples) : m_multisample(multisample), m_samples(samples) {}
+Framebuffer::Framebuffer(int width, int height) : m_width(width), m_height(height) {}
 Framebuffer::Framebuffer(int width, int height, bool multisample, unsigned int samples)
     : m_width(width), m_height(height), m_multisample(multisample), m_samples(samples)
 {
-	// Empty
 }
 
 Framebuffer::~Framebuffer()
@@ -222,8 +209,8 @@ void Framebuffer::resize(int width, int height)
 	}
 
 	if (FB_DEBUG)
-		LOG_INFO("[FRAMEBUFFER DEBUG] Resizing {}FBO ({} : {}) -> ({} : {})", (m_multisample ? "AA " : ""), m_width,
-		         m_height, width, height);
+		LOG_INFO("[FRAMEBUFFER DEBUG] Resizing {}FBO ({} : {}) -> ({} : {})", (m_multisample ? "AA " : ""), m_width, m_height,
+		         width, height);
 
 	setSize(width, height);
 
@@ -344,8 +331,7 @@ std::weak_ptr<Framebuffer> Framebuffer::getResolvedFramebuffer()
 	{
 		if (!m_multisampleResolveFBO->isInitialized())
 		{
-			throw std::runtime_error(
-			    "Framebuffer: getResolvedFramebuffer(): Multisampled buffer has not been resolved yet!");
+			throw std::runtime_error("Framebuffer: getResolvedFramebuffer(): Multisampled buffer has not been resolved yet!");
 		}
 		return m_multisampleResolveFBO;
 	}
@@ -438,8 +424,7 @@ void Framebuffer::multisampleResolveColor(unsigned int colorAttachmentIndex)
 
 	// Resolve multisampled buffer into a single sampled intermediate one
 	if (FB_DEBUG && FB_DEBUG_VERBOSE)
-		LOG_INFO("[FRAMEBUFFER DEBUG] Resolving {}FBO color ({} : {})", (m_multisample ? "AA " : ""), m_width,
-		         m_height);
+		LOG_INFO("[FRAMEBUFFER DEBUG] Resolving {}FBO color ({} : {})", (m_multisample ? "AA " : ""), m_width, m_height);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, getId());
 	glReadBuffer(GL_COLOR_ATTACHMENT0 + colorAttachmentIndex);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_multisampleResolveFBO->getId());
@@ -460,8 +445,7 @@ void Framebuffer::multisampleResolveDepth()
 
 	// Resolve multisampled buffer into a single sampled intermediate one
 	if (FB_DEBUG && FB_DEBUG_VERBOSE)
-		LOG_INFO("[FRAMEBUFFER DEBUG] Resolving {}FBO depth ({} : {})", (m_multisample ? "AA " : ""), m_width,
-		         m_height);
+		LOG_INFO("[FRAMEBUFFER DEBUG] Resolving {}FBO depth ({} : {})", (m_multisample ? "AA " : ""), m_width, m_height);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, getId());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_multisampleResolveFBO->getId());
 	glBlitFramebuffer(0, 0, m_width, m_height, 0, 0, m_width, m_height,
@@ -530,9 +514,13 @@ void Framebuffer::setDrawBuffers()
 	{
 		glDrawBuffers(static_cast<GLsizei>(colorBuffers.size()), &colorBuffers[0]);
 	}
+	else
+	{
+		glDrawBuffer(GL_NONE); // No color attachments to draw into
+	}
 }
 
-void Framebuffer::setDrawBuffers(std::vector<unsigned int> indices)
+void Framebuffer::setDrawBuffers(const std::vector<unsigned int>& indices)
 {
 	if (indices.empty() || indices.size() > m_colorAttachments.size())
 	{

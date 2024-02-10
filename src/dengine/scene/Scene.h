@@ -30,12 +30,12 @@ class RenderOptions;
  */
 class Scene
 {
-public:
+  public:
 	std::shared_ptr<AbstractCamera> m_camera;
 	std::shared_ptr<Lighting> m_lighting;
 	std::shared_ptr<SelectStencil> m_selectStencil;
 
-protected:
+  protected:
 	std::vector<std::shared_ptr<Entity>> m_entities;
 	// TODO: (DR) Support for multiple selected entities might be nice, but perhaps not needed
 	// TODO: (DR) It might make more sense to reuse unused ids to keep the below 255
@@ -43,8 +43,7 @@ protected:
 	//	Right now quickly re-adding entities will make the id explode past 255!!
 	Entity* m_selectedEntity = nullptr;
 
-	std::vector<std::function<void(Entity*)>>
-	    m_selectionCallbacks; ///< Callbacks that get triggered on entity selection
+	std::vector<std::function<void(Entity*)>> m_selectionCallbacks; ///< Callbacks that get triggered on entity selection
 
 	// Temporary lists for transparency sorting
 	std::vector<Entity*> m_unorderedTransparentEntities;
@@ -54,7 +53,7 @@ protected:
 	// Temporary list for selection/highlighting
 	std::vector<Entity*> m_highlightedEntities;
 
-public:
+  public:
 	explicit Scene();
 	virtual ~Scene() = default;
 
@@ -165,16 +164,18 @@ public:
 		}
 	}
 
-	const std::vector<std::shared_ptr<Entity>>& getEntities() const
+	[[nodiscard]] const std::vector<std::shared_ptr<Entity>>& getEntities() const
 	{
 		return m_entities;
 	}
 
-protected:
+  protected:
 	void sortUnorderedTransparentEntities(glm::mat4 view, std::vector<Entity*>& entities);
 	void sortExplicitlyOrderedTransparentEntities(std::vector<Entity*>& entities);
 
-	void renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection,
-	                                     const std::vector<Entity*>& entities) const;
+	void renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection, const std::vector<Entity*>& entities) const;
+
+	Ptr<Framebuffer> drawShadowBuffer(glm::vec3 lightPos, float far_plane, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
+	                                  const DisplayOptions& displayOptions);
 };
 } // namespace Dg
