@@ -7,4 +7,10 @@ class Math
 	{
 		return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
 	}
+
+	static inline float randomFloat(float min, float max)
+	{
+		float r = (float)rand() / (float)RAND_MAX;
+		return min + r * (max - min);
+	}
 };

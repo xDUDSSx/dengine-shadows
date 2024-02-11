@@ -330,30 +330,33 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			renderSortedTransparentEntities(view, projection, m_explicitTransparencyOrderEntitiesLast);
 		}
 
-		DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::YELLOW, view, projection);
-		DebugDraw::drawFrustum(shadowMap->m_croppedLightProjection * shadowMap->m_lightView, Color::TEAL, view, projection);
-
-		DebugDraw::drawLineBox(shadowMap->m_testBox, Color::RED, view, projection);
-//		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
-		DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
-
-		DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::GREEN, view, projection);
-		DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
-		DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
-		DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
-
-//		glm::vec4 testVec = glm::vec4(0.f, 0.f, 0.f, 1.0f);
-//		testVec = projection * view * testVec;
-//		GfxUtils::perspectiveDivide(testVec);
-//		LOG_INFO("Test vec clip: {}, {}, {}", testVec.x, testVec.y, testVec.z);
-
-		for (const auto receiver : shadowMap->m_receivers)
+		if (displayOptions.showDebug)
 		{
-			DebugDraw::drawLineBox(&(receiver->m_aabb.getPoints()[0]), Color::BLUE, view, projection);
-		}
-		for (const auto caster : shadowMap->m_casters)
-		{
-			DebugDraw::drawLineBox(&(caster->m_aabb.getPoints()[0]), glm::vec3(0.71f, 1.f, 0.f), view, projection);
+			DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::YELLOW, view, projection);
+			DebugDraw::drawFrustum(shadowMap->m_croppedLightProjection * shadowMap->m_lightView, Color::TEAL, view, projection);
+
+			DebugDraw::drawLineBox(shadowMap->m_testBox, Color::RED, view, projection);
+			//		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
+			DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
+
+			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::GREEN, view, projection);
+			DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
+			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
+			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
+
+			//		glm::vec4 testVec = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+			//		testVec = projection * view * testVec;
+			//		GfxUtils::perspectiveDivide(testVec);
+			//		LOG_INFO("Test vec clip: {}, {}, {}", testVec.x, testVec.y, testVec.z);
+
+			for (const auto receiver : shadowMap->m_receivers)
+			{
+				DebugDraw::drawLineBox(&(receiver->m_aabb.getPoints()[0]), Color::BLUE, view, projection);
+			}
+			for (const auto caster : shadowMap->m_casters)
+			{
+				DebugDraw::drawLineBox(&(caster->m_aabb.getPoints()[0]), glm::vec3(0.71f, 1.f, 0.f), view, projection);
+			}
 		}
 
 		mainFBO->end(true);
@@ -626,12 +629,12 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 	if (options.shadows)
 	{
 		auto d = DepthAttachment(false, 100, 100, false);
-		d.m_minFilter = GL_LINEAR;
-		d.m_magFilter = GL_LINEAR;
+		d.m_minFilter = GL_NEAREST;
+		d.m_magFilter = GL_NEAREST;
 		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
 		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
 		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024 * 4, 1024 * 4);
+		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024, 1024);
 		shadowFbo->setDepthAttachment(d);
 		renderTarget->addFramebuffer("shadows", shadowFbo);
 	}
@@ -797,12 +800,12 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 
 		// Setup phong shader, later, shaders are switched for each object
 		ShadowShader* shadowShader = Shaders::instance().getShaderPtr<ShadowShader>();
-		for (auto& entity : m_entities)
-		{
-			entity->m_wboit = false; // Not using wboit
-			if (!entity->m_visible)
+	    for (auto& shadowCaster : shadowMap.m_casters)
+	    {
+			shadowCaster->m_wboit = false; // Not using wboit
+			if (!shadowCaster->m_visible)
 				continue;
-			if (!displayOptions.shouldDraw(*entity))
+			if (!displayOptions.shouldDraw(*shadowCaster))
 				continue;
 
 			// Render all entities
@@ -814,11 +817,11 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 			//				shadowShader->m_zFar = far_plane;
 			//				shadowShader->getSunPositionFromViewMatrix(view);
 			//				context.m_shader = shadowShader;
-			entity->prepareRenderContext(context);
-			if (!entity->m_shadowCullFront)
+			shadowCaster->prepareRenderContext(context);
+			if (!shadowCaster->m_shadowCullFront)
 				glDisable(GL_CULL_FACE);
-			entity->render(shadowMap.m_lightView, shadowMap.m_croppedLightProjection, context);
-			if (!entity->m_shadowCullFront)
+			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_croppedLightProjection, context);
+			if (!shadowCaster->m_shadowCullFront)
 				glEnable(GL_CULL_FACE);
 		}
 		glDisable(GL_CULL_FACE);

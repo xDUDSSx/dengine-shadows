@@ -23,6 +23,7 @@ class DebugDraw
 		object->m_singleColor = color;
 		Renderer::RenderContext context = object->createRenderContext();
 		object->render(view, projection, context);
+		mesh->dispose();
 		delete mesh;
 		delete object;
 	}
@@ -49,6 +50,7 @@ class DebugDraw
 		object->m_singleColor = color;
 		Renderer::RenderContext context = object->createRenderContext();
 		object->render(view, projection, context);
+		mesh->dispose();
 		delete mesh;
 		delete object;
 	}

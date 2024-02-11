@@ -32,7 +32,7 @@ bool SimpleApplication::onInit()
 	// Create render target
 	Dg::RenderOptions renderOptions;
 	renderOptions.multisample = false;
-	renderOptions.selection = true;
+	renderOptions.selection = false;
 	renderOptions.shadows = true;
 	if (!m_renderTarget)
 	{
@@ -48,6 +48,7 @@ bool SimpleApplication::onInit()
 	{
 		m_secondRenderTarget = m_scene->createRenderTarget(secondRenderOptions);
 	}
+	m_secondDisplayOptions.showDebug = true;
 
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_STENCIL_TEST);
@@ -82,15 +83,23 @@ void SimpleApplication::onDisplay()
 	int sWidth = m_windowSize.x / 2;
 	int sHeight = m_windowSize.y / 2;
 
-	m_scene->m_orbitCamera2->size(sWidth, sHeight);
-	m_scene->m_orbitCamera2->update();
-	m_scene->draw(sWidth, sHeight, m_scene->m_orbitCamera2->getView(), m_scene->m_orbitCamera2->getProjection(),
-	              *m_secondRenderTarget, m_displayOptions);
-
+	ImGui::SetNextWindowSizeConstraints(ImVec2(100, 20), ImVec2(FLT_MAX, FLT_MAX));
 	ImGui::Begin("Secondary view", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	GLuint texture2 = m_secondRenderTarget->getOutputFramebuffer().lock()->getColorTexture();
-	ImGui::Image((void*) (intptr_t) texture2, ImVec2(sWidth, sHeight), ImVec2(0, 1), ImVec2(1, 0));
-	m_secondaryWindowHovered = ImGui::IsWindowHovered();
+	if (!ImGui::IsWindowCollapsed())
+	{
+		m_scene->m_orbitCamera2->size(sWidth, sHeight);
+		m_scene->m_orbitCamera2->update();
+		m_scene->draw(sWidth, sHeight, m_scene->m_orbitCamera2->getView(), m_scene->m_orbitCamera2->getProjection(),
+		              *m_secondRenderTarget, m_secondDisplayOptions);
+		GLuint texture2 = m_secondRenderTarget->getOutputFramebuffer().lock()->getColorTexture();
+		ImGui::Image((void*) (intptr_t) texture2, ImVec2(sWidth, sHeight), ImVec2(0, 1), ImVec2(1, 0));
+		m_secondaryWindowHovered = ImGui::IsWindowHovered();
+	}
+	else
+	{
+		m_secondaryWindowHovered = false;
+	}
+
 	ImGui::End();
 
 	ImGui::Begin("Info", NULL, ImGuiWindowFlags_AlwaysAutoResize);

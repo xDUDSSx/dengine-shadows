@@ -24,6 +24,8 @@ public:
 	bool showGridYAxis{false};
 	bool showGridZAxis{true};
 
+	bool showDebug{false};
+
 	DisplayOptions() = default;
 
 	bool shouldDraw(const Entity& entity) const;

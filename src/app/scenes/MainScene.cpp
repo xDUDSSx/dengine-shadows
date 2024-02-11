@@ -8,6 +8,7 @@
 #include "dengine/entity/TexturedObject.h"
 #include "dengine/entity/ColoredObject.h"
 #include "dengine/shader/Shaders.h"
+#include "dengine/util/Math.h"
 
 #include "dengine/component/Entity.h"
 
@@ -104,7 +105,7 @@ void MainScene::init()
 	Ptr<Dg::TexturedObject> plane =
 	    std::make_shared<Dg::TexturedObject>(planeMesh, Dg::Shaders::instance().getShaderPtr<Dg::PhongShader>());
 	plane->m_modelMatrix = glm::rotate(plane->m_modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(15.f));
+	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(50.f));
 	plane->m_shadowCaster = false;
 	addEntity(plane);
 
@@ -114,10 +115,12 @@ void MainScene::init()
 	camera->m_modelMatrix = glm::translate(camera->m_modelMatrix, glm::vec3(3.f, 1.0f, -2.0f));
 	addEntity(camera);
 
-	Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
-	Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
-	metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(-4.f, 4.0f, 1.0f));
-	addEntity(metalBox);
+	{
+		Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
+		Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
+		metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(-4.f, 4.0f, 1.0f));
+		addEntity(metalBox);
+	}
 
 	Dg::Mesh* duckMesh = RMI.mesh("Data/Models/Duck.gltf");
 	Ptr<Dg::TexturedObject> duck = std::make_shared<Dg::TexturedObject>(duckMesh);
@@ -131,6 +134,21 @@ void MainScene::init()
 	cube->m_modelMatrix = glm::scale(cube->m_modelMatrix, glm::vec3(0.5f));
 	cube->m_modelMatrix = glm::translate(cube->m_modelMatrix, glm::vec3(10.f, 1.0f, 10.0f));
 	addEntity(cube);
+
+	int range = 10;
+	int minRange = 2;
+	for (int x = -range; x < range; x++)
+	{
+		for (int y = -range; y < range; y++)
+		{
+			if (abs(x) < minRange || abs(y) < minRange)
+				continue;
+			Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
+			Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
+			metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(x * 6.f, Math::randomFloat(0.0f, 10.0f), y * 6.0f));
+			addEntity(metalBox);
+		}
+	}
 
 	// Ecs test
 	ecsTest();

@@ -13,6 +13,7 @@ class SimpleApplication : public Dengine::Application
 	Ptr<Dg::SceneRenderTarget> m_renderTarget;
 	Ptr<Dg::SceneRenderTarget> m_secondRenderTarget;
 	Dg::DisplayOptions m_displayOptions;
+	Dg::DisplayOptions m_secondDisplayOptions;
 
 	bool m_secondaryWindowHovered{false};
 
