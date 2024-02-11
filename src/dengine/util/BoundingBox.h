@@ -13,8 +13,14 @@ class BoundingBox
 	glm::vec3 m_min{};
 	glm::vec3 m_max{};
 
-	BoundingBox() = default;
+	BoundingBox();
 	BoundingBox(glm::vec3 min, glm::vec3 max) : m_min(min), m_max(max) {}
+
+	inline void unionBox(const BoundingBox& box)
+	{
+		m_min = glm::min(m_min, box.m_min);
+		m_max = glm::max(m_max, box.m_max);
+	}
 
 	std::array<glm::vec3, 8> getPoints() const
 	{

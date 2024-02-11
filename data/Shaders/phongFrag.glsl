@@ -168,6 +168,10 @@ float calculateShadowFactor(mat4 lightPvm, vec3 normal, vec3 lightDir)
 	//float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
 	float bias = 0.001;
 	float shadow = fragDepth + bias > shadowDepth ? 1.0 : 0.0;
+
+	if (shadowDepth >= 1.0)
+		shadow = 0.0;
+
 	return shadow;
 }
 

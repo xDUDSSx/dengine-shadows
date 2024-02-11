@@ -88,7 +88,6 @@ void SimpleApplication::onDisplay()
 	              *m_secondRenderTarget, m_displayOptions);
 
 	ImGui::Begin("Secondary view", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	LOG_INFO(ImGui::GetCurrentWindow()->Name);
 	GLuint texture2 = m_secondRenderTarget->getOutputFramebuffer().lock()->getColorTexture();
 	ImGui::Image((void*) (intptr_t) texture2, ImVec2(sWidth, sHeight), ImVec2(0, 1), ImVec2(1, 0));
 	m_secondaryWindowHovered = ImGui::IsWindowHovered();

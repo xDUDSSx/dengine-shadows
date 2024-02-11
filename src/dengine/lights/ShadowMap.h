@@ -51,8 +51,8 @@ class ShadowMap
 	void update(Scene& scene, AbstractCamera& camera);
 
   private:
-	//	void buildCropMatrix(const Frustum& frustum);
-	void buildCropMatrix(const BoundingBox& box);
+	void buildSceneInDependentCropMatrix(const BoundingBox& box);
+	void buildSceneDependentCropMatrix(const BoundingBox& frustumAABB);
 
 	void computeTightShadowFrustum(AbstractCamera& camera, Scene& scene);
 

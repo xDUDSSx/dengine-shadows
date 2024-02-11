@@ -1,9 +1,8 @@
-//
-// Created by Dan on 10.02.2024.
-//
-
 #include "BoundingBox.h"
 
 namespace Dg
 {
+
+BoundingBox::BoundingBox() : m_min(std::numeric_limits<float>::max()), m_max(std::numeric_limits<float>::min()) {}
+
 } // namespace Dg

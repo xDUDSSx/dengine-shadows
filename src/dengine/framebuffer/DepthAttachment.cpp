@@ -12,10 +12,10 @@ DepthAttachment::DepthAttachment(bool stencil, GLsizei width, GLsizei height, bo
 }
 
 DepthAttachment::DepthAttachment(const DepthAttachment& attchmt)
-    : m_multisampled(attchmt.m_multisampled), m_samples(attchmt.m_samples),
-      m_useRenderbuffer(attchmt.m_useRenderbuffer), m_stencil(attchmt.m_stencil), m_width(attchmt.m_width),
-      m_height(attchmt.m_height), m_minFilter(attchmt.m_minFilter), m_magFilter(attchmt.m_magFilter),
-      m_textureWrapS(attchmt.m_textureWrapS), m_textureWrapT(attchmt.m_textureWrapT), m_syncSize(attchmt.m_syncSize)
+    : m_multisampled(attchmt.m_multisampled), m_samples(attchmt.m_samples), m_useRenderbuffer(attchmt.m_useRenderbuffer),
+      m_stencil(attchmt.m_stencil), m_width(attchmt.m_width), m_height(attchmt.m_height), m_minFilter(attchmt.m_minFilter),
+      m_magFilter(attchmt.m_magFilter), m_textureWrapS(attchmt.m_textureWrapS), m_textureWrapT(attchmt.m_textureWrapT),
+      m_textureBorderColor(attchmt.m_textureBorderColor), m_syncSize(attchmt.m_syncSize)
 {
 	// Empty
 }
@@ -46,13 +46,12 @@ void DepthAttachment::resize(int width, int height)
 		glBindRenderbuffer(GL_RENDERBUFFER, m_id);
 		if (m_multisampled)
 		{
-			glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_samples,
-			                                 m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, m_width, m_height);
+			glRenderbufferStorageMultisample(GL_RENDERBUFFER, m_samples, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT,
+			                                 m_width, m_height);
 		}
 		else
 		{
-			glRenderbufferStorage(GL_RENDERBUFFER, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, m_width,
-			                      m_height);
+			glRenderbufferStorage(GL_RENDERBUFFER, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, m_width, m_height);
 		}
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
@@ -62,8 +61,8 @@ void DepthAttachment::resize(int width, int height)
 		if (m_multisampled)
 		{
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_id);
-			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_samples,
-			                        m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, width, height, GL_TRUE);
+			glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_samples, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT,
+			                        width, height, GL_TRUE);
 			glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 			// Note: Multisampled texture filtering is always NEAREST
 		}
@@ -71,12 +70,15 @@ void DepthAttachment::resize(int width, int height)
 		{
 			glBindTexture(GL_TEXTURE_2D, m_id);
 			glTexImage2D(GL_TEXTURE_2D, 0, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, width, height, 0,
-			             m_stencil ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
-			             m_stencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_INT, NULL);
+			             m_stencil ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT, m_stencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_INT,
+			             NULL);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_minFilter);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_magFilter);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_textureWrapS);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_textureWrapT);
+			if (m_textureBorderColor != glm::vec4(0.0f))
+				glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(m_textureBorderColor));
+
 			glBindTexture(GL_TEXTURE_2D, 0);
 		}
 	}
@@ -87,8 +89,8 @@ void DepthAttachment::bind() const
 	if (m_useRenderbuffer)
 	{
 		glBindRenderbuffer(GL_RENDERBUFFER, m_id);
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, m_stencil ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT,
-		                          GL_RENDERBUFFER, m_id);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, m_stencil ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,
+		                          m_id);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 	else

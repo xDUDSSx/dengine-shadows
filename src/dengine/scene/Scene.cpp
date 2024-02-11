@@ -626,6 +626,11 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 	if (options.shadows)
 	{
 		auto d = DepthAttachment(false, 100, 100, false);
+		d.m_minFilter = GL_LINEAR;
+		d.m_magFilter = GL_LINEAR;
+		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
+		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
+		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
 		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024 * 4, 1024 * 4);
 		shadowFbo->setDepthAttachment(d);
 		renderTarget->addFramebuffer("shadows", shadowFbo);

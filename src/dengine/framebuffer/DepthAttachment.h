@@ -26,6 +26,8 @@ public:
 	GLint m_textureWrapS{GL_REPEAT};
 	GLint m_textureWrapT{GL_REPEAT};
 
+	glm::vec4 m_textureBorderColor{0.0f};
+
 	// TODO: (DR) Not implemented, generally its easier to use a second FBO
 	bool m_syncSize{true};
 
