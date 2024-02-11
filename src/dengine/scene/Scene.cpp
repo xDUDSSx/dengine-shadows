@@ -39,16 +39,20 @@ void Scene::draw(int width, int height, SceneRenderTarget& renderTarget, const D
 	m_camera->size(width, height);
 	m_camera->update();
 
+	// Adjust camera planes and create tightShadowFrustum
+	if (renderTarget.getRenderOptions().shadows)
+	{
+		m_lighting->m_shadowSunLight.m_shadowMap->computeTightShadowFrustum(*m_camera, *this);
+	}
+
 	return draw(width, height, m_camera->getView(), m_camera->getProjection(), renderTarget, displayOptions);
 }
 
 void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
                  const DisplayOptions& displayOptions)
 {
-	// TODO: (DR) This method seems a LITTLE too long, maybe cut it up into more methods or some outright renderer
-	// class? 	On the other hand, what its doing is by principle somewhat related to each other and having the whole
-	// render
-	//  process in one place might be beneficial
+	// TODO: (DR) This method seems a LITTLE too long, maybe cut it up into more methods or some outright renderer class?
+	//   See note at the beginning of this file
 
 	auto renderOptions = renderTarget.getRenderOptions();
 	bool drawSelection = renderOptions.selection;
@@ -327,6 +331,14 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		}
 
 		DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::LIGHT_BLUE, view, projection);
+		DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::GREEN, view, projection);
+		DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
+		DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
+
+		for (const auto receiver : shadowMap->m_receivers)
+		{
+			DebugDraw::drawLineBox(&(receiver->m_aabb.getPoints()[0]), Color::BLUE, view, projection);
+		}
 
 		mainFBO->end(true);
 
@@ -753,6 +765,10 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilMask(0xFF);
+
+	Frustum frustum; ////<<<<<<<<<<<<<<<<<<<<<
+
+	shadowMap.buildCropMatrix(frustum);
 
 	Ptr<Framebuffer> shadowFBO = shadowMap.m_shadowFBO.lock();
 	shadowFBO->start();

@@ -11,9 +11,12 @@ class MainScene : public Dg::Scene
 {
   public:
 	std::shared_ptr<Dg::OrbitCamera> m_orbitCamera;
+	std::shared_ptr<Dg::OrbitCamera> m_orbitCamera2;
 
 	explicit MainScene();
 
 	void init() override;
 	void draw(int width, int height, Dg::SceneRenderTarget& renderTarget, const Dg::DisplayOptions& displayOptions) override;
+	void draw(int width, int height, glm::mat4 view, glm::mat4 projection, Dg::SceneRenderTarget& renderTarget,
+	          const Dg::DisplayOptions& displayOptions) override;
 };

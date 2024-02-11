@@ -9,7 +9,7 @@
 #include "dengine/platform/Logger.h"
 #include "dengine/resources/ResourceManager.h"
 
-#define DENGINE_DEBUG 0
+#define DENGINE_DEBUG 1
 
 namespace Dengine
 {

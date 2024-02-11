@@ -147,6 +147,8 @@ public:
 	virtual float getFov() const;
 	virtual void setFov(float fov);
 
+	static glm::mat4 createProjectionMatrix(float width, float height, float fov, float zNear, float zFar, bool nonShrinking);
+
 protected:
 	glm::mat4 createProjectionMatrix(bool nonShrinking) const;
 	std::vector<glm::vec3> createBoundingBoxWorldPoints(glm::vec3 boxMin, glm::vec3 boxMax, glm::mat4 modelMatrix);

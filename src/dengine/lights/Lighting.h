@@ -5,13 +5,13 @@
 
 #include "dengine/platform/Common.h"
 
-#include "ShadowCastingLight.h"
 #include "ShadowSunLight.h"
 
 namespace Dg
 {
 class Light;
 class PhongShader;
+class ShadowSunLight;
 
 /**
  * \brief Class that manages passing of light information to shaders.

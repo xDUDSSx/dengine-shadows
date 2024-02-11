@@ -24,6 +24,10 @@ class Lighting;
 class SceneRenderTarget;
 class RenderOptions;
 
+// TODO: (DR) Seperate rendering code from scene code, scene should handle storing and fetching entities, not rendering
+//   Rendering should be handled by some abstract renderer class that can have variations.
+//   Within these renderers a further render pass abstraction could be used
+
 /**
  * A scene representing a "game world" that contains entities and is viewed by a
  * camera. Handles drawing and logic updates.

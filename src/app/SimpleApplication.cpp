@@ -39,6 +39,16 @@ bool SimpleApplication::onInit()
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
 	}
 
+	// Create second render target
+	Dg::RenderOptions secondRenderOptions;
+	secondRenderOptions.multisample = false;
+	secondRenderOptions.selection = false;
+	secondRenderOptions.shadows = false;
+	if (!m_secondRenderTarget)
+	{
+		m_secondRenderTarget = m_scene->createRenderTarget(secondRenderOptions);
+	}
+
 	glEnable(GL_MULTISAMPLE);
 	glEnable(GL_STENCIL_TEST);
 	glEnable(GL_DEPTH_TEST);
@@ -63,10 +73,25 @@ void SimpleApplication::onDisplay()
 
 	ImGui::Begin("Framebuffers", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	GLuint texture = m_renderTarget->getFramebuffer("shadows").lock()->getDepthAttachment()->m_id;
-//	GLuint texture = m_renderTarget->getFramebuffer(5).lock()->getDepthAttachment()->m_id;
-//	GLuint texture = m_renderTarget->getOutputFramebuffer().lock()->getColorTexture();
+	//	GLuint texture = m_renderTarget->getFramebuffer(5).lock()->getDepthAttachment()->m_id;
+	//	GLuint texture = m_renderTarget->getOutputFramebuffer().lock()->getColorTexture();
 	// the uv coordinates flips the picture, since it was upside down at first
 	ImGui::Image((void*) (intptr_t) texture, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::End();
+
+	int sWidth = m_windowSize.x / 2;
+	int sHeight = m_windowSize.y / 2;
+
+	m_scene->m_orbitCamera2->size(sWidth, sHeight);
+	m_scene->m_orbitCamera2->update();
+	m_scene->draw(sWidth, sHeight, m_scene->m_orbitCamera2->getView(), m_scene->m_orbitCamera2->getProjection(),
+	              *m_secondRenderTarget, m_displayOptions);
+
+	ImGui::Begin("Secondary view", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	LOG_INFO(ImGui::GetCurrentWindow()->Name);
+	GLuint texture2 = m_secondRenderTarget->getOutputFramebuffer().lock()->getColorTexture();
+	ImGui::Image((void*) (intptr_t) texture2, ImVec2(sWidth, sHeight), ImVec2(0, 1), ImVec2(1, 0));
+	m_secondaryWindowHovered = ImGui::IsWindowHovered();
 	ImGui::End();
 
 	ImGui::Begin("Info", NULL, ImGuiWindowFlags_AlwaysAutoResize);
@@ -77,7 +102,14 @@ void SimpleApplication::onDisplay()
 
 void SimpleApplication::onUpdate(float dt)
 {
-	int width = m_windowSize.x;
-	int height = m_windowSize.y;
-	m_scene->processInput(dt, InputManager::getMousePos(), m_windowSize);
+	//	m_scene->processInput(dt, InputManager::getMousePos(), m_windowSize);
+
+	if (m_secondaryWindowHovered)
+	{
+		m_scene->m_orbitCamera2->processInput(dt, InputManager::getMousePos(), m_windowSize);
+	}
+	else
+	{
+		m_scene->m_orbitCamera->processInput(dt, InputManager::getMousePos(), m_windowSize);
+	}
 }

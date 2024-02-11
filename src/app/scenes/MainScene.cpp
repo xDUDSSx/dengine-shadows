@@ -15,6 +15,8 @@ MainScene::MainScene() : Scene()
 {
 	m_orbitCamera = std::make_shared<Dg::OrbitCamera>();
 	m_camera = m_orbitCamera;
+
+	m_orbitCamera2 = std::make_shared<Dg::OrbitCamera>();
 }
 
 struct Transform : public DgTest::Component
@@ -74,6 +76,7 @@ void MainScene::init()
 
 	m_orbitCamera->setFov(90.f);
 	m_orbitCamera->setRotationX(60);
+	m_orbitCamera->setZFar(160.0f);
 
 	// Lights
 	Dg::SunLight* sun = new Dg::SunLight();
@@ -118,6 +121,7 @@ void MainScene::init()
 	Dg::Mesh* duckMesh = RMI.mesh("Data/Models/Duck.gltf");
 	Ptr<Dg::TexturedObject> duck = std::make_shared<Dg::TexturedObject>(duckMesh);
 	duck->m_modelMatrix = glm::translate(duck->m_modelMatrix, glm::vec3(4.f, 2.0f, 1.0f));
+	duck->m_modelMatrix = glm::rotate(duck->m_modelMatrix, glm::radians(34.f), glm::vec3(0.f, 1.f, 0.f));
 	duck->m_highlight = true;
 	addEntity(duck);
 
@@ -134,4 +138,10 @@ void MainScene::init()
 void MainScene::draw(int width, int height, Dg::SceneRenderTarget& renderTarget, const Dg::DisplayOptions& displayOptions)
 {
 	Scene::draw(width, height, renderTarget, displayOptions);
+}
+
+void MainScene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Dg::SceneRenderTarget& renderTarget,
+                     const Dg::DisplayOptions& displayOptions)
+{
+	Scene::draw(width, height, view, projection, renderTarget, displayOptions);
 }

@@ -19,18 +19,18 @@ void AbstractCamera::size(int width, int height)
 	this->m_height = height;
 }
 
-glm::mat4 AbstractCamera::createProjectionMatrix(bool nonShrinking) const
+glm::mat4 AbstractCamera::createProjectionMatrix(float width, float height, float fov, float zNear, float zFar, bool nonShrinking)
 {
 	if (nonShrinking)
 	{
 		// Non shrinking resizing
 		// Method 1
-		float scale = m_zNear * tan(glm::radians(m_fov / 2));
+		float scale = zNear * tan(glm::radians(fov / 2));
 		float l, r, b, t;
 		r = t = scale;
 		l = b = -scale;
-		float aspect = std::min(m_width, m_height) / (float) std::max(m_width, m_height);
-		if (m_width > m_height)
+		float aspect = std::min(width, height) / (float) std::max(width, height);
+		if (width > height)
 		{
 			t *= aspect;
 			b *= aspect;
@@ -40,7 +40,7 @@ glm::mat4 AbstractCamera::createProjectionMatrix(bool nonShrinking) const
 			l *= aspect;
 			r *= aspect;
 		}
-		return glm::frustum(l, r, b, t, m_zNear, m_zFar);
+		return glm::frustum(l, r, b, t, zNear, zFar);
 		//		// Method 2
 		//		if (width > height)
 		//		{
@@ -57,8 +57,13 @@ glm::mat4 AbstractCamera::createProjectionMatrix(bool nonShrinking) const
 	}
 	else
 	{
-		return glm::perspective(glm::radians(m_fov), m_width / (float) m_height, m_zNear, m_zFar);
+		return glm::perspective(glm::radians(fov), width / (float) height, zNear, zFar);
 	}
+}
+
+glm::mat4 AbstractCamera::createProjectionMatrix(bool nonShrinking) const
+{
+	return createProjectionMatrix(m_width, m_height, m_fov, m_zNear, m_zFar, nonShrinking);
 }
 
 void AbstractCamera::viewpoint(AbstractCamera::Viewpoint viewpoint)

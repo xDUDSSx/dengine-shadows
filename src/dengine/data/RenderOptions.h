@@ -4,6 +4,7 @@
 #include "glm/vec3.hpp"
 
 #include "HighlightOptions.h"
+#include "dengine/camera/Frustum.h"
 
 namespace Dg
 {
@@ -21,6 +22,8 @@ public:
 	bool selection;
 	int lightingModel;
 	bool shadows;
+
+	Frustum tightShadowFrustum;
 
 	glm::vec3 clearColor;
 

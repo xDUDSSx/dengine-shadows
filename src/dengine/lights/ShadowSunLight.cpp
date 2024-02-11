@@ -1,6 +1,7 @@
 #include "ShadowSunLight.h"
 
 #include "dengine/shader/PhongShader.h"
+#include "dengine/lights/ShadowMap.h"
 
 namespace Dg
 {

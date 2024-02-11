@@ -4,6 +4,7 @@
 
 #include "dengine/Resources/Mesh.h"
 #include "Entity.h"
+#include "dengine/util/BoundingBox.h"
 
 namespace Dg
 {
@@ -16,6 +17,7 @@ class GameObject : public Entity
 {
   public:
 	Dg::Mesh* m_mesh;
+	BoundingBox m_aabb;
 
 	// TODO: (DR) Move this to entity I suppose
 	float m_opacity{0.5f};

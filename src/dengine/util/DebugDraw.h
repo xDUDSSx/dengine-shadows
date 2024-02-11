@@ -2,6 +2,7 @@
 
 #include "dengine/resources/Shaper.h"
 #include "dengine/util/BoundingBox.h"
+#include "dengine/util/GfxUtils.h"
 #include "dengine/entity/ColoredObject.h"
 #include "dengine/shader/Shaders.h"
 #include "dengine/shader/ColorShader.h"
@@ -55,15 +56,8 @@ class DebugDraw
 	static void drawFrustum(const glm::mat4& frustumTransform, const glm::vec3& color, const glm::mat4& view,
 	                        const glm::mat4& projection)
 	{
-		glm::mat4 transformInv = glm::inverse(frustumTransform);
-		glm::vec3 transformedPoints[8] = {};
-		glm::vec3 ndcPoints[8] = {glm::vec3(-1, -1, -1), glm::vec3(-1, 1, -1), glm::vec3(1, 1, -1), glm::vec3(1, -1, -1),
-		                          glm::vec3(-1, -1, 1),  glm::vec3(-1, 1, 1),  glm::vec3(1, 1, 1),  glm::vec3(1, -1, 1)};
-		for (int i = 0; i < 8; i++)
-		{
-			transformedPoints[i] = transformInv * glm::vec4(ndcPoints[i], 1.0f);
-		}
-		DebugDraw::drawLineBox(transformedPoints, glm::vec3(1, 1, 0), view, projection);
+		Frustum frustum = GfxUtils::unprojectMatrix(frustumTransform);
+		DebugDraw::drawLineBox(frustum.m_corners, glm::vec3(1, 1, 0), view, projection);
 	}
 };
 
