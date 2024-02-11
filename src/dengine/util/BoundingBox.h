@@ -16,7 +16,7 @@ class BoundingBox
 	BoundingBox() = default;
 	BoundingBox(glm::vec3 min, glm::vec3 max) : m_min(min), m_max(max) {}
 
-	std::array<glm::vec3, 8> getPoints()
+	std::array<glm::vec3, 8> getPoints() const
 	{
 		std::array<glm::vec3, 8> arr{};
 		for (int i = 0; i < 8; i++)
@@ -29,7 +29,7 @@ class BoundingBox
 		return arr;
 	}
 
-	std::array<glm::vec3, 8> getTransformedPoints(glm::mat4 transform)
+	std::array<glm::vec3, 8> getTransformedPoints(glm::mat4 transform) const
 	{
 		std::array<glm::vec3, 8> points = getPoints();
 		std::array<glm::vec3, 8> transformedPoints{};

@@ -115,12 +115,12 @@ void MainScene::init()
 
 	Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
 	Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
-	metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(-4.f, 3.0f, 1.0f));
+	metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(-4.f, 4.0f, 1.0f));
 	addEntity(metalBox);
 
 	Dg::Mesh* duckMesh = RMI.mesh("Data/Models/Duck.gltf");
 	Ptr<Dg::TexturedObject> duck = std::make_shared<Dg::TexturedObject>(duckMesh);
-	duck->m_modelMatrix = glm::translate(duck->m_modelMatrix, glm::vec3(4.f, 2.0f, 1.0f));
+	duck->m_modelMatrix = glm::translate(duck->m_modelMatrix, glm::vec3(4.f, 2.5f, 1.0f));
 	duck->m_modelMatrix = glm::rotate(duck->m_modelMatrix, glm::radians(34.f), glm::vec3(0.f, 1.f, 0.f));
 	duck->m_highlight = true;
 	addEntity(duck);
@@ -128,7 +128,7 @@ void MainScene::init()
 	Dg::Mesh* cubeMesh = RMI.mesh("Data/Models/cube.obj");
 	Ptr<Dg::TexturedObject> cube = std::make_shared<Dg::TexturedObject>(cubeMesh);
 	cube->m_modelMatrix = glm::scale(cube->m_modelMatrix, glm::vec3(0.5f));
-	cube->m_modelMatrix = glm::translate(cube->m_modelMatrix, glm::vec3(0.f, 1.0f, 0.0f));
+	cube->m_modelMatrix = glm::translate(cube->m_modelMatrix, glm::vec3(10.f, 1.0f, 10.0f));
 	addEntity(cube);
 
 	// Ecs test

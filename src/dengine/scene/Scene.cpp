@@ -330,10 +330,22 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			renderSortedTransparentEntities(view, projection, m_explicitTransparencyOrderEntitiesLast);
 		}
 
-		DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::LIGHT_BLUE, view, projection);
+		DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::YELLOW, view, projection);
+		DebugDraw::drawFrustum(shadowMap->m_croppedLightProjection * shadowMap->m_lightView, Color::TEAL, view, projection);
+
+		DebugDraw::drawLineBox(shadowMap->m_testBox, Color::RED, view, projection);
+		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
+		DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
+
 		DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::GREEN, view, projection);
 		DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
 		DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
+		DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
+
+//		glm::vec4 testVec = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+//		testVec = projection * view * testVec;
+//		GfxUtils::perspectiveDivide(testVec);
+//		LOG_INFO("Test vec clip: {}, {}, {}", testVec.x, testVec.y, testVec.z);
 
 		for (const auto receiver : shadowMap->m_receivers)
 		{
@@ -766,9 +778,7 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilMask(0xFF);
 
-	Frustum frustum; ////<<<<<<<<<<<<<<<<<<<<<
-
-	shadowMap.buildCropMatrix(frustum);
+	shadowMap.buildCropMatrix(shadowMap.m_tightCameraFrustumAABB);
 
 	Ptr<Framebuffer> shadowFBO = shadowMap.m_shadowFBO.lock();
 	shadowFBO->start();
@@ -800,7 +810,7 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 			entity->prepareRenderContext(context);
 			if (!entity->m_shadowCullFront)
 				glDisable(GL_CULL_FACE);
-			entity->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
+			entity->render(shadowMap.m_lightView, shadowMap.m_croppedLightProjection, context);
 			if (!entity->m_shadowCullFront)
 				glEnable(GL_CULL_FACE);
 		}

@@ -57,7 +57,7 @@ class DebugDraw
 	                        const glm::mat4& projection)
 	{
 		Frustum frustum = GfxUtils::unprojectMatrix(frustumTransform);
-		DebugDraw::drawLineBox(frustum.m_corners, glm::vec3(1, 1, 0), view, projection);
+		DebugDraw::drawLineBox(frustum.m_corners, color, view, projection);
 	}
 };
 
