@@ -20,11 +20,14 @@ class ShadowMap
 	float m_zNear;
 	float m_zFar;
 
+	// Parameters of the light projection volume
 	glm::vec3 m_origin;
 	glm::vec3 m_target;
+	glm::vec3 m_dir;
 	float m_width;
 
 	std::vector<Ptr<GameObject>> m_receivers;
+	std::vector<Ptr<GameObject>> m_casters;
 	Frustum m_cameraFrustum;
 	BoundingBox m_cameraFrustumAABB;
 	Frustum m_tightCameraFrustum;
@@ -34,7 +37,7 @@ class ShadowMap
 	glm::mat4 m_croppedLightProjection{1.0f};
 
 	BoundingBox m_testBox;
-	std::vector<glm::vec3> m_testBox2;
+//	std::vector<glm::vec3> m_testBox2;
 
   public:
 	WPtr<Framebuffer> m_shadowFBO;
@@ -45,13 +48,18 @@ class ShadowMap
 	 */
 	void setupShadowVolume(const glm::vec3& origin, const glm::vec3& target, float width, float zNear, float zFar);
 
+	void update(Scene& scene, AbstractCamera& camera);
+
+  private:
 	//	void buildCropMatrix(const Frustum& frustum);
 	void buildCropMatrix(const BoundingBox& box);
 
 	void computeTightShadowFrustum(AbstractCamera& camera, Scene& scene);
 
-  private:
+	void precalculateBoundingBoxes(Scene& scene);
+
 	static std::vector<Ptr<GameObject>> findShadowReceivers(const BoundingBox& box, Scene& scene);
+	std::vector<Ptr<GameObject>> findShadowCasters(BoundingBox frustumAABB, Scene& scene);
 
 	static std::pair<float, float> findTightNearAndFarPlanes(const glm::vec3& origin, const glm::vec3& dir,
 	                                                         const std::vector<Ptr<GameObject>> objects);

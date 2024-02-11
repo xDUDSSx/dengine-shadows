@@ -42,7 +42,7 @@ void Scene::draw(int width, int height, SceneRenderTarget& renderTarget, const D
 	// Adjust camera planes and create tightShadowFrustum
 	if (renderTarget.getRenderOptions().shadows)
 	{
-		m_lighting->m_shadowSunLight.m_shadowMap->computeTightShadowFrustum(*m_camera, *this);
+		m_lighting->m_shadowSunLight.m_shadowMap->update(*this, *m_camera);
 	}
 
 	return draw(width, height, m_camera->getView(), m_camera->getProjection(), renderTarget, displayOptions);
@@ -334,7 +334,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		DebugDraw::drawFrustum(shadowMap->m_croppedLightProjection * shadowMap->m_lightView, Color::TEAL, view, projection);
 
 		DebugDraw::drawLineBox(shadowMap->m_testBox, Color::RED, view, projection);
-		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
+//		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
 		DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
 
 		DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::GREEN, view, projection);
@@ -350,6 +350,10 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		for (const auto receiver : shadowMap->m_receivers)
 		{
 			DebugDraw::drawLineBox(&(receiver->m_aabb.getPoints()[0]), Color::BLUE, view, projection);
+		}
+		for (const auto caster : shadowMap->m_casters)
+		{
+			DebugDraw::drawLineBox(&(caster->m_aabb.getPoints()[0]), glm::vec3(0.71f, 1.f, 0.f), view, projection);
 		}
 
 		mainFBO->end(true);
@@ -777,8 +781,6 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilMask(0xFF);
-
-	shadowMap.buildCropMatrix(shadowMap.m_tightCameraFrustumAABB);
 
 	Ptr<Framebuffer> shadowFBO = shadowMap.m_shadowFBO.lock();
 	shadowFBO->start();

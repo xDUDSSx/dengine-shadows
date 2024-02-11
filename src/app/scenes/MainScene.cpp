@@ -105,6 +105,7 @@ void MainScene::init()
 	    std::make_shared<Dg::TexturedObject>(planeMesh, Dg::Shaders::instance().getShaderPtr<Dg::PhongShader>());
 	plane->m_modelMatrix = glm::rotate(plane->m_modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
 	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(15.f));
+	plane->m_shadowCaster = false;
 	addEntity(plane);
 
 	Dg::Mesh* cameraMesh = RMI.mesh("Data/Models/camera.gltf");
