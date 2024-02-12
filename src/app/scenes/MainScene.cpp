@@ -107,10 +107,10 @@ void MainScene::init()
 	Dg::Mesh* planeMesh = RMI.mesh("Data/Models/plane.gltf");
 	Ptr<Dg::TexturedObject> plane =
 	    std::make_shared<Dg::TexturedObject>(planeMesh, Dg::Shaders::instance().getShaderPtr<Dg::PhongShader>());
+	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(80.f, 1.0f, 80.f));
 	plane->m_modelMatrix = glm::rotate(plane->m_modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
 	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(50.f));
 	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(15.f));
-	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(150.f, 15.f, 15.f));
 	plane->m_shadowCaster = false;
 	addEntity(plane);
 
@@ -139,6 +139,12 @@ void MainScene::init()
 	cube->m_modelMatrix = glm::scale(cube->m_modelMatrix, glm::vec3(0.5f));
 	cube->m_modelMatrix = glm::translate(cube->m_modelMatrix, glm::vec3(10.f, 1.0f, 10.0f));
 	addEntity(cube);
+
+	Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/building1.obj");
+	Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+	building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+	building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -40.0f));
+	addEntity(building);
 
 	int range = 10;
 	int minRange = 2;

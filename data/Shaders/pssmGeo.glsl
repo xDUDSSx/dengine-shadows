@@ -20,7 +20,6 @@ void main()
             gl_Position = u_croppedMatrix[i] * gl_in[v].gl_Position;
             EmitVertex();
         }
-        // mark end of triangle
         EndPrimitive();
     }
 }

@@ -34,6 +34,7 @@ bool SimpleApplication::onInit()
 	renderOptions.multisample = false;
 	renderOptions.selection = false;
 	renderOptions.shadows = true;
+	renderOptions.shadowsUseInstancedRendering = true;
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -128,4 +129,11 @@ void SimpleApplication::onUpdate(float dt)
 	{
 		m_scene->m_orbitCamera->processInput(dt, InputManager::getMousePos(), m_windowSize);
 	}
+}
+
+void SimpleApplication::onExit()
+{
+	// Dispose of render targets
+	m_renderTarget.reset();
+	m_secondRenderTarget.reset();
 }

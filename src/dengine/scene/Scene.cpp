@@ -15,6 +15,7 @@
 #include "dengine/shader/WBOITCompositeShader.h"
 #include "dengine/shader/DepthShader.h"
 #include "dengine/shader/PSSMShader.h"
+#include "dengine/shader/PSSMInstancingShader.h"
 #include "dengine/renderer/Renderer.h"
 
 #include "SceneRenderTarget.h"
@@ -818,16 +819,17 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 	glStencilMask(0xFF);
 
+	// Render shadow casters into shadow map
 	Ptr<Framebuffer> shadowFBO = shadowMap.m_shadowFBO.lock();
 	shadowFBO->start();
 	{
 		glClear(GL_DEPTH_BUFFER_BIT);
 
 		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
+		glCullFace(GL_FRONT); // Cull front faces to try help with shadow artefacts
 
-		// Setup phong shader, later, shaders are switched for each object
 		PSSMShader* pssmShader = Shaders::instance().getShaderPtr<PSSMShader>();
+		PSSMInstancingShader* pssmInstancingShader = Shaders::instance().getShaderPtr<PSSMInstancingShader>();
 		for (auto& shadowCaster : shadowMap.m_casters)
 		{
 			shadowCaster->m_wboit = false; // Not using wboit
@@ -836,27 +838,39 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 			if (!displayOptions.shouldDraw(*shadowCaster))
 				continue;
 
-			// Render all entities
-
 			Renderer::RenderContext context;
-			//			context.m_renderType = Renderer::RenderType::DEPTH;
+			// context.m_renderType = Renderer::RenderType::DEPTH;
 			context.m_renderType = Renderer::RenderType::CUSTOM;
-			pssmShader->cropMatrices = shadowMap.m_cropMatrices;
-			pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
-			pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
-			//				shadowShader->m_lightPos = lightPos;
-			//				shadowShader->m_zFar = far_plane;
-			//				shadowShader->getSunPositionFromViewMatrix(view);
-			context.m_shader = pssmShader;
+
+			if (renderOptions.shadowsUseInstancedRendering)
+			{
+				pssmInstancingShader->cropMatrices = shadowMap.m_cropMatrices;
+				pssmInstancingShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+				pssmInstancingShader->splitEnd = shadowCaster->m_shadowSplitEnd;
+
+				// Render as many instances as the number of cascades the shadow caster is part of
+				context.m_instanceCount = shadowCaster->m_shadowSplitEnd - shadowCaster->m_shadowSplitBegin + 1;
+				context.m_shader = pssmInstancingShader;
+			} else {
+				pssmShader->cropMatrices = shadowMap.m_cropMatrices;
+				pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+				pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
+				//				shadowShader->m_lightPos = lightPos;
+				//				shadowShader->m_zFar = far_plane;
+				//				shadowShader->getSunPositionFromViewMatrix(view);
+				context.m_instanceCount = 0;
+				context.m_shader = pssmShader;
+			}
 
 			shadowCaster->prepareRenderContext(context);
 			if (!shadowCaster->m_shadowCullFront)
 				glDisable(GL_CULL_FACE);
-			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
+			Renderer::render(shadowCaster, shadowMap.m_lightView, shadowMap.m_lightProjection, context);
+//			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
 			if (!shadowCaster->m_shadowCullFront)
 				glEnable(GL_CULL_FACE);
 
-			// Reset split indicators
+			// Reset split indicators for next frame
 			shadowCaster->m_shadowSplitBegin = INT_MAX;
 			shadowCaster->m_shadowSplitEnd = INT_MIN;
 		}

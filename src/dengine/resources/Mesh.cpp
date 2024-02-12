@@ -126,6 +126,16 @@ void Mesh::render() const
 	glBindVertexArray(0);
 }
 
+void Mesh::renderInstanced(int instances) const
+{
+	glBindVertexArray(m_vao);
+	for (auto& meshPart : m_meshParts)
+	{
+		renderMeshPartInstanced(meshPart, instances);
+	}
+	glBindVertexArray(0);
+}
+
 void Mesh::renderMeshPart(const MeshPart& meshPart) const
 {
 	switch (m_drawType)
@@ -160,6 +170,27 @@ void Mesh::renderMeshPart(const MeshPart& meshPart) const
 		break;
 	default:
 		throw std::invalid_argument("Mesh: Invalid mesh draw type!");
+	}
+}
+
+void Mesh::renderMeshPartInstanced(const MeshPart& meshPart, int instances) const
+{
+	switch (m_drawType)
+	{
+	case ELEMENTS:
+		switch (m_primitiveType)
+		{
+		case TRIANGLES:
+			glDrawElementsInstancedBaseVertex(GL_TRIANGLES, meshPart.nIndices, GL_UNSIGNED_INT,
+					                          (void*) (meshPart.startIndex * sizeof(unsigned int)), instances,
+					                          meshPart.baseVertex);
+			break;
+		default:
+			throw std::invalid_argument("Mesh (instanced): Invalid mesh primitive type!");
+		}
+		break;
+	default:
+		throw std::invalid_argument("Mesh (instanced): Invalid mesh draw type!");
 	}
 }
 

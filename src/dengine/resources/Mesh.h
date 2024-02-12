@@ -38,7 +38,7 @@ namespace Dg
  */
 class Mesh : public ManagedResource
 {
-public:
+  public:
 	friend class ResourceManager;
 
 	enum DrawType
@@ -145,18 +145,20 @@ public:
 
 	int m_textureCount{0}; ///< Number of loaded textures for this mesh (files or embedded)
 
-private:
+  private:
 	Mesh() = default;
-	Mesh(Mesh::PrimitiveType primitiveType, Mesh::DrawType drawType, bool useNormals, bool useTexcoords,
-	     bool useTangents, bool useColors);
+	Mesh(Mesh::PrimitiveType primitiveType, Mesh::DrawType drawType, bool useNormals, bool useTexcoords, bool useTangents,
+	     bool useColors);
 
-public:
+  public:
 	/**
 	 * \brief Renders the mesh and all its mesh parts.
 	 * For more control over rendering you can iterate through individual
 	 * meshParts and use renderMeshPart()
 	 */
 	void render() const;
+
+	void renderInstanced(int instances) const;
 
 	/**
 	 * Renders an individual mesh part.
@@ -167,6 +169,8 @@ public:
 	 */
 	void renderMeshPart(const MeshPart& meshPart) const;
 
+	void renderMeshPartInstanced(const MeshPart& meshPart, int instances) const;
+
 	void dispose() const;
 
 	/**
@@ -175,8 +179,8 @@ public:
 	 * @return Pointer to the new Mesh object (newly allocated, to be managed
 	 * externally)
 	 */
-	static Mesh* create(Mesh::PrimitiveType primitiveType, const float* verts, const unsigned int nVertices,
-	                    const float* colors, const unsigned int nColors);
+	static Mesh* create(Mesh::PrimitiveType primitiveType, const float* verts, const unsigned int nVertices, const float* colors,
+	                    const unsigned int nColors);
 
 	/**
 	 * Create mesh from indexed vertices and colors;
@@ -199,7 +203,7 @@ public:
 	 */
 	static Mesh* load(const std::string& path, bool normalize = false, bool minimalLoad = false);
 
-private:
+  private:
 	static void loadGeometry(Mesh* mesh, const aiScene* scn, float scalingFactor);
 	static void loadIndices(Mesh* mesh, const aiScene* scn);
 	static void createVaoAndBindAttribs(Mesh* mesh);

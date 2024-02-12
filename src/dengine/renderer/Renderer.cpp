@@ -29,7 +29,14 @@ void Renderer::render(GameObject* entity, glm::mat4 view, glm::mat4 projection, 
 	for (auto& meshPart : entity->m_mesh->m_meshParts)
 	{
 		objectShader->setUniformsPerMeshPart(meshPart);
-		entity->m_mesh->renderMeshPart(meshPart);
+		if (context.m_instanceCount <= 0)
+		{
+			entity->m_mesh->renderMeshPart(meshPart);
+		}
+		else
+		{
+			entity->m_mesh->renderMeshPartInstanced(meshPart, context.m_instanceCount);
+		}
 	}
 	glBindVertexArray(0);
 }

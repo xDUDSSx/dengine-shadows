@@ -130,7 +130,10 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 //	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
 	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
 	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
-//
+	// TODO: Fix the Z bounds = near -> <= 1.0, far >= receiver.bb.min.z
+//	ndcBox.m_min.z = std::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
+//	ndcBox.m_max.z = std::min(ndcObjectsAABB.m_max.z, 1.0f);
+
 //	ndcBox.m_max.z = 1.0f;
 
 //	BoundingBox ndcBox = ndcObjectsAABB;

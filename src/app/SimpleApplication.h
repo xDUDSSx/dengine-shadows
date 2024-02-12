@@ -23,4 +23,5 @@ class SimpleApplication : public Dengine::Application
 	bool onInit() override;
 	void onDisplay() override;
 	void onUpdate(float dt) override;
+	void onExit() override;
 };

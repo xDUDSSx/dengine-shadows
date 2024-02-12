@@ -35,6 +35,8 @@ class Renderer
 
 		bool m_opaque{true};
 		float m_opacity{1.0f};
+
+		int m_instanceCount{0}; // If >0 instanced rendering will be used
 	};
 
 	static void render(GameObject* entity, glm::mat4 view, glm::mat4 projection, const RenderContext& context);

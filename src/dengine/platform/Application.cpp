@@ -70,6 +70,8 @@ int Application::run(int argc, char** argv)
 		glfwSwapBuffers(m_window);
 	}
 
+	dispose();
+
 	// Destroy imgui
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
@@ -180,6 +182,13 @@ void Application::display()
 void Application::update(float dt)
 {
 	onUpdate(dt);
+}
+
+void Application::dispose() {
+	// Release resources
+	RMI.dispose();
+
+	onExit();
 }
 
 } // namespace Dengine

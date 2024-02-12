@@ -13,11 +13,6 @@
 namespace Dg
 {
 
-ResourceManager::~ResourceManager()
-{
-	dispose();
-}
-
 bool ResourceManager::resourceExists(size_t id)
 {
 	auto it = m_resourceMap.find(id);

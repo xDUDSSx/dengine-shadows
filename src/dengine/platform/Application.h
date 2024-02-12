@@ -49,11 +49,13 @@ class Application
 	int init(const char* title);
 	void display();
 	void update(float dt);
+	void dispose();
 
   protected:
 	virtual bool onInit() = 0;
 	virtual void onDisplay() = 0;
 	virtual void onUpdate(float dt) = 0;
+	virtual void onExit() = 0;
 };
 
 // THIS IS A WORKAROUND TO MAKE IT EASY TO ACCESS THE CURRENT APPLICATION INSTANCE

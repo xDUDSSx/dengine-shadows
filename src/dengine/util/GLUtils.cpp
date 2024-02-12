@@ -198,7 +198,6 @@ void deleteProgramAndShaders(GLuint program)
 		glGetAttachedShaders(program, MAX_COUNT, &count, shaders);
 		for (int i = 0; i < count; i++)
 			glDeleteShader(shaders[i]);
-
 		glDeleteProgram(program);
 	}
 }

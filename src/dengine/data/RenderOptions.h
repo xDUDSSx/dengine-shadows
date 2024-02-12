@@ -22,6 +22,7 @@ public:
 	bool selection;
 	int lightingModel;
 	bool shadows;
+	bool shadowsUseInstancedRendering;
 
 	Frustum tightShadowFrustum;
 

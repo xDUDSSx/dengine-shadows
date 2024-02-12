@@ -102,7 +102,6 @@ class ResourceManager
 	bool m_forceModelNormalize{false}; /// If true loaded models will be normalized
 
 	ResourceManager() = default;
-	~ResourceManager();
 
 	ResourceManager(ResourceManager const&) = delete;
 	void operator=(ResourceManager const&) = delete;
@@ -248,6 +247,8 @@ class ResourceManager
 	Mesh* mesh(const std::string& alias, Mesh::PrimitiveType primitiveType, const float* verts, const unsigned int nVertices,
 	           const unsigned int* indices, const unsigned int nIndices, const float* colors, const unsigned int nColors);
 
+	void dispose();
+
   private:
 	/**
 	 * Return value:
@@ -281,7 +282,6 @@ class ResourceManager
 	void disposeShader(GLuint id);
 	void disposeModel(Mesh* mesh);
 
-	void dispose();
 	void disposeResource(std::shared_ptr<Resource>& resource);
 };
 } // namespace Dg

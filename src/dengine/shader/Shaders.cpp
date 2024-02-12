@@ -13,6 +13,7 @@ using namespace Dg;
 #include "dengine/shader/SelectionCompositeShader.h"
 #include "dengine/shader/WBOITCompositeShader.h"
 #include "dengine/shader/PSSMShader.h"
+#include "dengine/shader/PSSMInstancingShader.h"
 
 #include "dengine/platform/Logger.h"
 
@@ -27,6 +28,7 @@ bool Shaders::load()
 	ok &= createShader<ColorShader>("Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
 	ok &= createShader<DepthShader>("Data/Shaders/depthVert.glsl", "");
 	ok &= createShader<PSSMShader>("Data/Shaders/depthVert.glsl", "", "Data/Shaders/pssmGeo.glsl");
+	ok &= createShader<PSSMInstancingShader>("Data/Shaders/pssmInstancingVert.glsl", "", "Data/Shaders/pssmInstancingGeo.glsl");
 	ok &= createShader<ShadowShader>("Data/Shaders/shadowVert.glsl", "Data/Shaders/shadowFrag.glsl");
 	ok &= createShader<GridShader>("Data/Shaders/gridVert.glsl", "Data/Shaders/gridFrag.glsl");
 	ok &= createShader<WBOITCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl");
@@ -48,7 +50,8 @@ bool Shaders::reload()
 
 	RMI.m_forceReload = true;
 	bool ok = true;
-	for (const auto& [key, value] : m_shaders) {
+	for (const auto& [key, value] : m_shaders)
+	{
 		ok &= reloadShader(*value, value->m_vertSource, value->m_fragSource);
 	}
 	RMI.m_forceReload = false;
