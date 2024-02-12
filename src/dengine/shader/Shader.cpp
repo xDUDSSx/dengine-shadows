@@ -50,6 +50,13 @@ void Shader::bindTexture2DMS(GLuint textureUnit, GLuint textureID, GLint sampler
 	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, textureID);
 }
 
+void Shader::bindTexture2DArray(GLuint textureUnit, GLuint textureID, GLint samplerLocation)
+{
+	glActiveTexture(GL_TEXTURE0 + textureUnit);
+	glUniform1i(samplerLocation, textureUnit);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textureID);
+}
+
 bool Shader::hasUniform(GLint location)
 {
 	return location != -1;

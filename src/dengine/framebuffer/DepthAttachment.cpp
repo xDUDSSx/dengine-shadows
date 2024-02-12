@@ -13,6 +13,7 @@ DepthAttachment::DepthAttachment(bool stencil, GLsizei width, GLsizei height, bo
 
 DepthAttachment::DepthAttachment(const DepthAttachment& attchmt)
     : m_multisampled(attchmt.m_multisampled), m_samples(attchmt.m_samples), m_useRenderbuffer(attchmt.m_useRenderbuffer),
+      m_use2DTextureArray(attchmt.m_use2DTextureArray), m_2DTextureArrayLayers(attchmt.m_2DTextureArrayLayers),
       m_stencil(attchmt.m_stencil), m_width(attchmt.m_width), m_height(attchmt.m_height), m_minFilter(attchmt.m_minFilter),
       m_magFilter(attchmt.m_magFilter), m_textureWrapS(attchmt.m_textureWrapS), m_textureWrapT(attchmt.m_textureWrapT),
       m_textureBorderColor(attchmt.m_textureBorderColor), m_syncSize(attchmt.m_syncSize)
@@ -68,18 +69,35 @@ void DepthAttachment::resize(int width, int height)
 		}
 		else
 		{
-			glBindTexture(GL_TEXTURE_2D, m_id);
-			glTexImage2D(GL_TEXTURE_2D, 0, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, width, height, 0,
-			             m_stencil ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT, m_stencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_INT,
-			             NULL);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_minFilter);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_magFilter);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_textureWrapS);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_textureWrapT);
-			if (m_textureBorderColor != glm::vec4(0.0f))
-				glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(m_textureBorderColor));
+			if (m_use2DTextureArray)
+			{
+				glBindTexture(GL_TEXTURE_2D_ARRAY, m_id);
+				glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT24, width, height, m_2DTextureArrayLayers, 0,
+				             GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, m_magFilter);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, m_textureWrapS);
+				glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, m_textureWrapT);
+				if (m_textureBorderColor != glm::vec4(0.0f))
+					glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(m_textureBorderColor));
 
-			glBindTexture(GL_TEXTURE_2D, 0);
+				glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+			}
+			else
+			{
+				glBindTexture(GL_TEXTURE_2D, m_id);
+				glTexImage2D(GL_TEXTURE_2D, 0, m_stencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT, width, height, 0,
+				             m_stencil ? GL_DEPTH_STENCIL : GL_DEPTH_COMPONENT,
+				             m_stencil ? GL_UNSIGNED_INT_24_8 : GL_UNSIGNED_INT, NULL);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, m_minFilter);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, m_magFilter);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, m_textureWrapS);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, m_textureWrapT);
+				if (m_textureBorderColor != glm::vec4(0.0f))
+					glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, glm::value_ptr(m_textureBorderColor));
+
+				glBindTexture(GL_TEXTURE_2D, 0);
+			}
 		}
 	}
 }
@@ -95,8 +113,15 @@ void DepthAttachment::bind() const
 	}
 	else
 	{
-		glFramebufferTexture2D(GL_FRAMEBUFFER, m_stencil ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT,
-		                       (m_multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D), m_id, 0);
+		if (m_use2DTextureArray)
+		{
+			glFramebufferTexture(GL_FRAMEBUFFER, m_stencil ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT, m_id, 0);
+		}
+		else
+		{
+			glFramebufferTexture2D(GL_FRAMEBUFFER, m_stencil ? GL_DEPTH_STENCIL_ATTACHMENT : GL_DEPTH_ATTACHMENT,
+			                       (m_multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D), m_id, 0);
+		}
 	}
 }
 

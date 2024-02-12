@@ -16,7 +16,8 @@ void ShadowSunLight::setUniforms(const PhongShader& shader, int index) const
 
 	// TODO: Replace with cropped matrix
 //	glm::mat4 lightPvm = m_shadowMap->m_lightProjection * m_shadowMap->m_lightView;
-	glm::mat4 lightPvmCropped = m_shadowMap->m_croppedLightProjection * m_shadowMap->m_lightView;
+//	glm::mat4 lightPvmCropped = m_shadowMap->m_croppedLightProjection * m_shadowMap->m_lightView;
+	glm::mat4 lightPvmCropped = m_shadowMap->m_cropMatrices[0] * m_shadowMap->m_lightProjection * m_shadowMap->m_lightView;
 	glUniformMatrix4fv(glGetUniformLocation(shader.m_id, (prefix + ".lightPvm").c_str()), 1, GL_FALSE, glm::value_ptr(lightPvmCropped));
 }
 

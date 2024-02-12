@@ -50,6 +50,8 @@ class Entity
 	bool m_shadowCaster{true};
 	bool m_shadowReceiver{true};
 	bool m_shadowCullFront{true};
+	int m_shadowSplitBegin{INT_MAX};
+	int m_shadowSplitEnd{INT_MIN};
 
 	Entity();
 	virtual ~Entity() = default;

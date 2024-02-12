@@ -12,6 +12,7 @@ using namespace Dg;
 #include "dengine/shader/ScreenOverlayShader.h"
 #include "dengine/shader/SelectionCompositeShader.h"
 #include "dengine/shader/WBOITCompositeShader.h"
+#include "dengine/shader/PSSMShader.h"
 
 #include "dengine/platform/Logger.h"
 
@@ -25,6 +26,7 @@ bool Shaders::load()
 	ok &= createShader<PhongShader>("Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl");
 	ok &= createShader<ColorShader>("Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
 	ok &= createShader<DepthShader>("Data/Shaders/depthVert.glsl", "");
+	ok &= createShader<PSSMShader>("Data/Shaders/depthVert.glsl", "", "Data/Shaders/pssmGeo.glsl");
 	ok &= createShader<ShadowShader>("Data/Shaders/shadowVert.glsl", "Data/Shaders/shadowFrag.glsl");
 	ok &= createShader<GridShader>("Data/Shaders/gridVert.glsl", "Data/Shaders/gridFrag.glsl");
 	ok &= createShader<WBOITCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl");

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <set>
+
 #include "dengine/platform/CommonGL.h"
 #include "dengine/camera/Frustum.h"
 #include "dengine/util/BoundingBox.h"
@@ -20,6 +22,9 @@ class ShadowMap
 	float m_zNear;
 	float m_zFar;
 
+	float m_zNearTight;
+	float m_zFarTight;
+
 	// Parameters of the light projection volume
 	glm::vec3 m_origin;
 	glm::vec3 m_target;
@@ -27,7 +32,8 @@ class ShadowMap
 	float m_width;
 
 	std::vector<Ptr<GameObject>> m_receivers;
-	std::vector<Ptr<GameObject>> m_casters;
+	//	std::vector<Ptr<GameObject>> m_casters;
+	std::set<GameObject*> m_casters;
 	Frustum m_cameraFrustum;
 	BoundingBox m_cameraFrustumAABB;
 	Frustum m_tightCameraFrustum;
@@ -37,7 +43,13 @@ class ShadowMap
 	glm::mat4 m_croppedLightProjection{1.0f};
 
 	BoundingBox m_testBox;
-//	std::vector<glm::vec3> m_testBox2;
+	//	std::vector<glm::vec3> m_testBox2;
+
+	//
+
+	int m_splitCount{4};
+	std::vector<float> m_splitPositions;
+	std::vector<glm::mat4> m_cropMatrices;
 
   public:
 	WPtr<Framebuffer> m_shadowFBO;
@@ -52,14 +64,14 @@ class ShadowMap
 
   private:
 	void buildSceneInDependentCropMatrix(const BoundingBox& box);
-	void buildSceneDependentCropMatrix(const BoundingBox& frustumAABB);
+	glm::mat4 buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const std::vector<GameObject*>& casters);
 
 	void computeTightShadowFrustum(AbstractCamera& camera, Scene& scene);
 
 	void precalculateBoundingBoxes(Scene& scene);
 
 	static std::vector<Ptr<GameObject>> findShadowReceivers(const BoundingBox& box, Scene& scene);
-	std::vector<Ptr<GameObject>> findShadowCasters(BoundingBox frustumAABB, Scene& scene);
+	std::vector<GameObject*> findShadowCasters(BoundingBox frustumAABB, int splitIndex, Scene& scene);
 
 	static std::pair<float, float> findTightNearAndFarPlanes(const glm::vec3& origin, const glm::vec3& dir,
 	                                                         const std::vector<Ptr<GameObject>> objects);

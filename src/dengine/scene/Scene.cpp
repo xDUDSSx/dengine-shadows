@@ -14,6 +14,7 @@
 #include "dengine/shader/SelectionCompositeShader.h"
 #include "dengine/shader/WBOITCompositeShader.h"
 #include "dengine/shader/DepthShader.h"
+#include "dengine/shader/PSSMShader.h"
 #include "dengine/renderer/Renderer.h"
 
 #include "SceneRenderTarget.h"
@@ -628,7 +629,19 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 
 	if (options.shadows)
 	{
+//		auto d = DepthAttachment(false, 100, 100, false);
+//		d.m_minFilter = GL_NEAREST;
+//		d.m_magFilter = GL_NEAREST;
+//		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
+//		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
+//		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
+//		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024, 1024);
+//		shadowFbo->setDepthAttachment(d);
+//		renderTarget->addFramebuffer("shadows", shadowFbo);
+
 		auto d = DepthAttachment(false, 100, 100, false);
+		d.m_use2DTextureArray = true;
+		d.m_2DTextureArrayLayers = 4;
 		d.m_minFilter = GL_NEAREST;
 		d.m_magFilter = GL_NEAREST;
 		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
@@ -799,7 +812,7 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 		glCullFace(GL_FRONT);
 
 		// Setup phong shader, later, shaders are switched for each object
-		ShadowShader* shadowShader = Shaders::instance().getShaderPtr<ShadowShader>();
+		PSSMShader* pssmShader = Shaders::instance().getShaderPtr<PSSMShader>();
 	    for (auto& shadowCaster : shadowMap.m_casters)
 	    {
 			shadowCaster->m_wboit = false; // Not using wboit
@@ -811,18 +824,26 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 			// Render all entities
 
 			Renderer::RenderContext context;
-			context.m_renderType = Renderer::RenderType::DEPTH;
-			//				context.m_renderType = Renderer::RenderType::CUSTOM;
+//			context.m_renderType = Renderer::RenderType::DEPTH;
+			context.m_renderType = Renderer::RenderType::CUSTOM;
+			pssmShader->cropMatrices = shadowMap.m_cropMatrices;
+			pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+			pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
 			//				shadowShader->m_lightPos = lightPos;
 			//				shadowShader->m_zFar = far_plane;
 			//				shadowShader->getSunPositionFromViewMatrix(view);
-			//				context.m_shader = shadowShader;
+			context.m_shader = pssmShader;
+
 			shadowCaster->prepareRenderContext(context);
 			if (!shadowCaster->m_shadowCullFront)
 				glDisable(GL_CULL_FACE);
-			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_croppedLightProjection, context);
+			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
 			if (!shadowCaster->m_shadowCullFront)
 				glEnable(GL_CULL_FACE);
+
+			// Reset split indicators
+			shadowCaster->m_shadowSplitBegin = INT_MAX;
+			shadowCaster->m_shadowSplitEnd = INT_MIN;
 		}
 		glDisable(GL_CULL_FACE);
 	}

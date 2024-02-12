@@ -14,6 +14,8 @@ public:
 	unsigned int m_samples{4};  ///< Number of MSAA samples if multisampled
 
 	bool m_useRenderbuffer{true};
+	bool m_use2DTextureArray{false};
+	int m_2DTextureArrayLayers{1};
 
 	bool m_stencil; ///< Whether the specified depth format includes a stencil buffer
 

@@ -21,14 +21,46 @@ void ShadowMap::setupShadowVolume(const glm::vec3& origin, const glm::vec3& targ
 	m_zFar = zFar;
 }
 
+void calculateSplitPositions(std::vector<float>& positions, int splitCount, float splitSchemeWeight, float zNear, float zFar)
+{
+	for (int i = 0; i < splitCount; i++)
+	{
+		float step = i / (float) splitCount;
+		float log = zNear * powf(zFar / zNear, step);
+		float uniform = zNear + (zFar - zNear) * step;
+		positions[i] = log * splitSchemeWeight + uniform * (1 - splitSchemeWeight);
+	}
+	positions[0] = zNear;
+	positions[splitCount] = zFar;
+}
+
+Frustum createSplitFrustum(float zNear, float zFar, const AbstractCamera& camera)
+{
+	glm::mat4 splitProjection =
+	    AbstractCamera::createProjectionMatrix(camera.getWidth(), camera.getHeight(), camera.getFov(), zNear, zFar, true);
+	return GfxUtils::unprojectMatrix(splitProjection * camera.getView());
+}
+
 void ShadowMap::update(Scene& scene, AbstractCamera& camera)
 {
 	// TODO: Refactoring, functions work with member state which is a mess
 	precalculateBoundingBoxes(scene);
 	computeTightShadowFrustum(camera, scene);
-	// TODO: (DR) Finding receivers and casters can probably be combined for a speedup (mentioned in the paper fig 5 pseudocode)
-	m_casters = findShadowCasters(m_tightCameraFrustumAABB, scene);
-	buildSceneDependentCropMatrix(m_tightCameraFrustumAABB);
+	m_cropMatrices.clear();
+	m_cropMatrices.resize(m_splitCount);
+	m_splitPositions.clear();
+	m_splitPositions.resize(m_splitCount + 1);
+	calculateSplitPositions(m_splitPositions, m_splitCount, 0.5f, m_zNearTight, m_zFarTight);
+	m_casters.clear();
+	for (int i = 0; i < m_splitCount; i++)
+	{
+		Frustum splitFrustum = createSplitFrustum(m_splitPositions[i], m_splitPositions[i + 1], camera);
+		BoundingBox splitFrustumAABB = splitFrustum.createAABB();
+		std::vector<GameObject*> localCasters = findShadowCasters(splitFrustumAABB, i, scene);
+		m_casters.insert(localCasters.begin(), localCasters.end());
+		glm::mat4 cropMatrix = buildSceneDependentCropMatrix(splitFrustumAABB, localCasters);
+		m_cropMatrices[i] = cropMatrix;
+	}
 }
 
 BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projection)
@@ -60,7 +92,7 @@ void ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB)
 	m_croppedLightProjection = m_cropMatrix * m_lightProjection;
 }
 
-void ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB)
+glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const std::vector<GameObject*>& casters)
 {
 	glm::mat4 lightPvm = m_lightProjection * m_lightView;
 
@@ -69,11 +101,11 @@ void ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB)
 	// TODO: Seemingly wrapping just the casters does the trick
 	//  THIS MAY BECAUSE WE'RE ONLY SAMPLING ONE CASCADE SO FAR
 	// Project each receiver and caster bounding box
-//	for (const auto& object : m_receivers)
-//	{
-//		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
-//	}
-	for (const auto& object : m_casters)
+	//	for (const auto& object : m_receivers)
+	//	{
+	//		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
+	//	}
+	for (const auto& object : casters)
 	{
 		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
 	}
@@ -84,22 +116,20 @@ void ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB)
 	// The frustum's aabb is a limiting factor, the crop volume can't be bigger
 
 	BoundingBox ndcBox;
-//	ndcBox.m_min.x = glm::max(ndcObjectsAABB.m_min.x, ndcFrustumAABB.m_min.x);
-//	ndcBox.m_max.x = glm::min(ndcObjectsAABB.m_max.x, ndcFrustumAABB.m_max.x);
-//	ndcBox.m_min.y = glm::max(ndcObjectsAABB.m_min.y, ndcFrustumAABB.m_min.y);
-//	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
-//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
-//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
+	//	ndcBox.m_min.x = glm::max(ndcObjectsAABB.m_min.x, ndcFrustumAABB.m_min.x);
+	//	ndcBox.m_max.x = glm::min(ndcObjectsAABB.m_max.x, ndcFrustumAABB.m_max.x);
+	//	ndcBox.m_min.y = glm::max(ndcObjectsAABB.m_min.y, ndcFrustumAABB.m_min.y);
+	//	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
+	//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
+	//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
 
 	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
 	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
 
-//	// Near plane is at 1.0f, far plane at -1.0f, again, flipped z-coords for reasons
-//	ndcBox.m_max.z = 1.0f; // Do not modify the near plane eg. "Extend" bounding box towards the original near plane
-
 	m_testBox = ndcBox;
-	m_cropMatrix = glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
-	m_croppedLightProjection = m_cropMatrix * m_lightProjection;
+	glm::mat4 cropMatrix =
+	    glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
+	return cropMatrix;
 }
 
 void ShadowMap::computeTightShadowFrustum(AbstractCamera& camera, Scene& scene)
@@ -112,10 +142,10 @@ void ShadowMap::computeTightShadowFrustum(AbstractCamera& camera, Scene& scene)
 	{
 		auto tightNearFar = findTightNearAndFarPlanes(camera.getPosition(), camera.getDirection(), m_receivers);
 		// Ensure that the tight near and far planes stay within original range, and that far is greater than near
-		float tightNear = std::max(tightNearFar.first, camera.getZNear());
-		float tightFar = std::max(tightNearFar.second, tightNear + 0.01f);
+		m_zNearTight = std::max(tightNearFar.first, camera.getZNear());
+		m_zFarTight = std::max(tightNearFar.second, m_zNearTight + 0.01f);
 		glm::mat4 tightProjection = AbstractCamera::createProjectionMatrix(camera.getWidth(), camera.getHeight(), camera.getFov(),
-		                                                                   tightNear, tightFar, true);
+		                                                                   m_zNearTight, m_zFarTight, true);
 		m_tightCameraFrustum = GfxUtils::unprojectMatrix(tightProjection * camera.getView());
 		m_tightCameraFrustumAABB = m_tightCameraFrustum.createAABB();
 	}
@@ -155,9 +185,9 @@ std::vector<Ptr<GameObject>> ShadowMap::findShadowReceivers(const BoundingBox& b
 	return out;
 }
 
-std::vector<Ptr<GameObject>> ShadowMap::findShadowCasters(BoundingBox frustumAABB, Scene& scene)
+std::vector<GameObject*> ShadowMap::findShadowCasters(BoundingBox frustumAABB, int splitIndex, Scene& scene)
 {
-	std::vector<Ptr<GameObject>> out;
+	std::vector<GameObject*> out;
 	for (const auto& entity : scene.getEntities())
 	{
 		if (!entity->m_shadowCaster)
@@ -168,7 +198,13 @@ std::vector<Ptr<GameObject>> ShadowMap::findShadowCasters(BoundingBox frustumAAB
 
 		if (Collisions::intersectSweep(gameObject->m_aabb, frustumAABB, m_dir))
 		{
-			out.push_back(gameObject);
+			out.push_back(gameObject.get());
+
+			// Update caster split range
+			if (gameObject->m_shadowSplitBegin > splitIndex)
+				gameObject->m_shadowSplitBegin = splitIndex;
+			if (gameObject->m_shadowSplitEnd < splitIndex)
+				gameObject->m_shadowSplitEnd = splitIndex;
 		}
 	}
 	return out;

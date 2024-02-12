@@ -55,6 +55,7 @@ public:
 
 	void bindTexture2D(GLuint textureUnit, GLuint textureID, GLint samplerLocation);
 	void bindTexture2DMS(GLuint textureUnit, GLuint textureID, GLint samplerLocation);
+	void bindTexture2DArray(GLuint textureUnit, GLuint textureID, GLint samplerLocation);
 
 	bool hasUniform(GLint location);
 

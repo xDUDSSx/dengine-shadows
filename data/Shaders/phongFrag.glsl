@@ -105,7 +105,7 @@ uniform int spotLightsCount;
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 // Shadow mapping
-uniform sampler2D u_shadowMap;
+uniform sampler2DArray u_shadowMap;
 //uniform vec3 u_lightPos;
 //uniform mat4 u_lightView;
 
@@ -163,7 +163,7 @@ float calculateShadowFactor(mat4 lightPvm, vec3 normal, vec3 lightDir)
 	lightNDCSpaceFragPos = lightNDCSpaceFragPos * 0.5 + 0.5;
 
 	float fragDepth = lightNDCSpaceFragPos.z;
-	float shadowDepth = texture(u_shadowMap, lightNDCSpaceFragPos.xy).r;
+	float shadowDepth = texture(u_shadowMap, vec3(lightNDCSpaceFragPos.xy, 0)).r;
 
 	//float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
 	float bias = 0.001;
