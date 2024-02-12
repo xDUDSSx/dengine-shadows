@@ -13,6 +13,8 @@ class MainScene : public Dg::Scene
 	std::shared_ptr<Dg::OrbitCamera> m_orbitCamera;
 	std::shared_ptr<Dg::OrbitCamera> m_orbitCamera2;
 
+	float m_sunSpin = 0.f;
+
 	explicit MainScene();
 
 	void init() override;

@@ -6,6 +6,8 @@
 #include "dengine/camera/Frustum.h"
 #include "dengine/util/BoundingBox.h"
 
+#define PSSM_CASCADES 4
+
 namespace Dg
 {
 class Scene;
@@ -32,24 +34,26 @@ class ShadowMap
 	float m_width;
 
 	std::vector<Ptr<GameObject>> m_receivers;
-	//	std::vector<Ptr<GameObject>> m_casters;
 	std::set<GameObject*> m_casters;
+	std::vector<GameObject*> m_debugCasters;
 	Frustum m_cameraFrustum;
 	BoundingBox m_cameraFrustumAABB;
 	Frustum m_tightCameraFrustum;
 	BoundingBox m_tightCameraFrustumAABB;
 
-	glm::mat4 m_cropMatrix{1.0f};
-	glm::mat4 m_croppedLightProjection{1.0f};
+	glm::mat4 m_cropMatrix{1.0f}; // TODO: Remove
+	glm::mat4 m_croppedLightProjection{1.0f}; // TODO: Remove
 
-	BoundingBox m_testBox;
-	//	std::vector<glm::vec3> m_testBox2;
+	BoundingBox m_testBox; // TODO: Remove
 
 	//
+	std::vector<Frustum> m_splitFrustums;
+	//
 
-	int m_splitCount{4};
+	int m_splitCount{PSSM_CASCADES};
 	std::vector<float> m_splitPositions;
 	std::vector<glm::mat4> m_cropMatrices;
+	std::vector<glm::mat4> m_lightPvmMatrices;
 
   public:
 	WPtr<Framebuffer> m_shadowFBO;
@@ -63,8 +67,10 @@ class ShadowMap
 	void update(Scene& scene, AbstractCamera& camera);
 
   private:
-	void buildSceneInDependentCropMatrix(const BoundingBox& box);
-	glm::mat4 buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const std::vector<GameObject*>& casters);
+//	void buildSceneInDependentCropMatrix(const BoundingBox& box);
+	static glm::mat4 buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm,
+	                                               const std::vector<GameObject*>& casters,
+	                                               const std::vector<Ptr<GameObject>>& receivers);
 
 	void computeTightShadowFrustum(AbstractCamera& camera, Scene& scene);
 

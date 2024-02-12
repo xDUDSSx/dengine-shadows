@@ -31,7 +31,7 @@ void PhongShader::init(bool initSuperclass)
 
 	m_shadowMapLoc = glGetUniformLocation(m_id, "u_shadowMap");
 //	m_lightMatrixLoc = glGetUniformLocation(m_id, "u_lightPos");
-	m_lightViewLoc = glGetUniformLocation(m_id, "u_lightView");
+//	m_lightViewLoc = glGetUniformLocation(m_id, "u_lightView");
 }
 
 void PhongShader::setUniforms()
@@ -39,11 +39,13 @@ void PhongShader::setUniforms()
 	glUniform3fv(tintId, 1, glm::value_ptr(m_tint));
 	glUniform1i(m_lightingModelId, m_lightingModel);
 
+	// TODO: (DR) Add support for multiple shadow maps
+
 //	bindTexture2D(5, m_shadowMapId, m_shadowMapLoc);
 	bindTexture2DArray(5, m_shadowMapId, m_shadowMapLoc);
 	//glUniformMatrix4fv(m_lightMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_lightMatrix));
 //	glUniform3fv(m_lightMatrixLoc, 1, glm::value_ptr(m_lightPos));
-	glUniformMatrix4fv(m_lightViewLoc, 1, GL_FALSE, glm::value_ptr(m_lightView));
+//	glUniformMatrix4fv(m_lightViewLoc, 1, GL_FALSE, glm::value_ptr(m_lightView));
 
 	ObjectShader::setUniforms();
 }

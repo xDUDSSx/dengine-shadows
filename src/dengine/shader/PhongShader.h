@@ -34,9 +34,9 @@ protected:
 	GLint m_lightingModelId;
 
 	// Shadow mapping
-	GLint m_shadowMapLoc;
-	GLint m_lightMatrixLoc;  // TODO: (DR) Move to a light UBO
-	GLint m_lightViewLoc;  // TODO: (DR) Move to a light UBO
+	GLint m_shadowMapLoc; // TODO: Add support for multiple shadow samplers
+	GLint m_lightMatrixLoc;  // TODO: Remove
+	GLint m_lightViewLoc;  // TODO: Remove
 
 	// TODO: (DR) Location IDs should probably be stored in some kind of map with string keys ideally
 

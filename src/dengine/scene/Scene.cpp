@@ -340,24 +340,39 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			//		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
 			DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
 
-			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::GREEN, view, projection);
+			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::BROWN, view, projection);
 			DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
 			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
 			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
+
+			glm::vec3 colors[] = {Color::GREEN, Color::YELLOW, Color::RED, Color::BLUE};
+			for (int i = 0; i < PSSM_CASCADES; i++)
+			{
+				DebugDraw::drawLineBox(shadowMap->m_splitFrustums[i].m_corners, colors[i], view, projection);
+				glm::mat4 croppedLightProjection =
+				    shadowMap->m_cropMatrices[i] * shadowMap->m_lightProjection * shadowMap->m_lightView;
+				DebugDraw::drawFrustum(croppedLightProjection, colors[i] - glm::vec3(0.2f), view, projection);
+			}
 
 			//		glm::vec4 testVec = glm::vec4(0.f, 0.f, 0.f, 1.0f);
 			//		testVec = projection * view * testVec;
 			//		GfxUtils::perspectiveDivide(testVec);
 			//		LOG_INFO("Test vec clip: {}, {}, {}", testVec.x, testVec.y, testVec.z);
 
-			for (const auto receiver : shadowMap->m_receivers)
+			for (const auto caster : shadowMap->m_debugCasters)
 			{
-				DebugDraw::drawLineBox(&(receiver->m_aabb.getPoints()[0]), Color::BLUE, view, projection);
+				DebugDraw::drawLineBox(&(caster->m_aabb.getPoints()[0]), Color::TEAL, view, projection);
 			}
-			for (const auto caster : shadowMap->m_casters)
-			{
-				DebugDraw::drawLineBox(&(caster->m_aabb.getPoints()[0]), glm::vec3(0.71f, 1.f, 0.f), view, projection);
-			}
+
+			//			for (const auto receiver : shadowMap->m_receivers)
+			//			{
+			//				DebugDraw::drawLineBox(&(receiver->m_aabb.getPoints()[0]), Color::BLUE, view, projection);
+			//			}
+			//			for (const auto caster : shadowMap->m_casters)
+			//			{
+			//				DebugDraw::drawLineBox(&(caster->m_aabb.getPoints()[0]), glm::vec3(0.71f, 1.f, 0.f), view,
+			// projection);
+			//			}
 		}
 
 		mainFBO->end(true);
@@ -629,25 +644,25 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 
 	if (options.shadows)
 	{
-//		auto d = DepthAttachment(false, 100, 100, false);
-//		d.m_minFilter = GL_NEAREST;
-//		d.m_magFilter = GL_NEAREST;
-//		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
-//		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
-//		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-//		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024, 1024);
-//		shadowFbo->setDepthAttachment(d);
-//		renderTarget->addFramebuffer("shadows", shadowFbo);
+		//		auto d = DepthAttachment(false, 100, 100, false);
+		//		d.m_minFilter = GL_NEAREST;
+		//		d.m_magFilter = GL_NEAREST;
+		//		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
+		//		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
+		//		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
+		//		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024, 1024);
+		//		shadowFbo->setDepthAttachment(d);
+		//		renderTarget->addFramebuffer("shadows", shadowFbo);
 
 		auto d = DepthAttachment(false, 100, 100, false);
 		d.m_use2DTextureArray = true;
-		d.m_2DTextureArrayLayers = 4;
+		d.m_2DTextureArrayLayers = PSSM_CASCADES;
 		d.m_minFilter = GL_NEAREST;
 		d.m_magFilter = GL_NEAREST;
 		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
 		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
 		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024, 1024);
+		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(256, 256);
 		shadowFbo->setDepthAttachment(d);
 		renderTarget->addFramebuffer("shadows", shadowFbo);
 	}
@@ -813,8 +828,8 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 
 		// Setup phong shader, later, shaders are switched for each object
 		PSSMShader* pssmShader = Shaders::instance().getShaderPtr<PSSMShader>();
-	    for (auto& shadowCaster : shadowMap.m_casters)
-	    {
+		for (auto& shadowCaster : shadowMap.m_casters)
+		{
 			shadowCaster->m_wboit = false; // Not using wboit
 			if (!shadowCaster->m_visible)
 				continue;
@@ -824,7 +839,7 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 			// Render all entities
 
 			Renderer::RenderContext context;
-//			context.m_renderType = Renderer::RenderType::DEPTH;
+			//			context.m_renderType = Renderer::RenderType::DEPTH;
 			context.m_renderType = Renderer::RenderType::CUSTOM;
 			pssmShader->cropMatrices = shadowMap.m_cropMatrices;
 			pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;

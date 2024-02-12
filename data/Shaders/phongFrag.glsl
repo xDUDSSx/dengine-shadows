@@ -109,6 +109,8 @@ uniform sampler2DArray u_shadowMap;
 //uniform vec3 u_lightPos;
 //uniform mat4 u_lightView;
 
+#define PSSM_CASCADES 4
+
 struct ShadowSunLight {
 	vec3 direction;
 
@@ -116,7 +118,9 @@ struct ShadowSunLight {
 	vec3 color;
 	vec3 specular;
 
-	mat4 lightPvm;
+//	mat4 lightPvm;
+	mat4 lightPvms[PSSM_CASCADES];
+	float splitPlanes[PSSM_CASCADES];
 };
 uniform ShadowSunLight u_shadowSunLight;
 
@@ -148,7 +152,7 @@ float distancePointToPlane(vec3 point, vec3 planePoint, vec3 planeNormal)
 }
 
 //float calculateShadowFactor(vec3 sunPos, vec3 sunDir)
-float calculateShadowFactor(mat4 lightPvm, vec3 normal, vec3 lightDir)
+float calculateShadowFactor(mat4 lightPvm, int splitIndex, vec3 normal, vec3 lightDir)
 {
 //	return 1.0;
 //	return texture(u_shadowMap, vec2(0.1, 0.1)).r;
@@ -163,7 +167,7 @@ float calculateShadowFactor(mat4 lightPvm, vec3 normal, vec3 lightDir)
 	lightNDCSpaceFragPos = lightNDCSpaceFragPos * 0.5 + 0.5;
 
 	float fragDepth = lightNDCSpaceFragPos.z;
-	float shadowDepth = texture(u_shadowMap, vec3(lightNDCSpaceFragPos.xy, 0)).r;
+	float shadowDepth = texture(u_shadowMap, vec3(lightNDCSpaceFragPos.xy, splitIndex)).r;
 
 	//float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
 	float bias = 0.001;
@@ -287,10 +291,25 @@ vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragP
 
 	//specularLight *= 0.3f;//Turn down sun specular a bit
 
-	//return light.intensity * (ambientLight + diffuseLight + specularLight);
-	float shadow = calculateShadowFactor(light.lightPvm, N, L);
+	float fragDistance = -FragPos.z;
+	int index = 0;
+	float shadow = 0.0;
+	for (int i = 0; i < PSSM_CASCADES; i++)
+	{
+		if (fragDistance < light.splitPlanes[i])
+		{
+//			index = i;
+			shadow = calculateShadowFactor(light.lightPvms[i], i, N, L);
+			break;
+		}
+	}
+//	return vec3(map(index, 0., PSSM_CASCADES, 0., 1.));
 	return ((1.0 - shadow) * (diffuseLight + specularLight));
-	//	return light.intensity * (ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)));
+
+//	float shadow = calculateShadowFactor(light.lightPvm, N, L);
+
+	//return light.intensity * (ambientLight + diffuseLight + specularLight);
+	//return light.intensity * (ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)));
 }
 
 vec3 calculateSpotLight(SpotLight light, Material material, vec3 fragPos, vec3 normal, vec3 tangent, vec3 binormal) {

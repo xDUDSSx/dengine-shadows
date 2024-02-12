@@ -46,6 +46,9 @@ void ShadowMap::update(Scene& scene, AbstractCamera& camera)
 	// TODO: Refactoring, functions work with member state which is a mess
 	precalculateBoundingBoxes(scene);
 	computeTightShadowFrustum(camera, scene);
+	m_splitFrustums.clear();
+	m_lightPvmMatrices.clear();
+	m_lightPvmMatrices.resize(m_splitCount);
 	m_cropMatrices.clear();
 	m_cropMatrices.resize(m_splitCount);
 	m_splitPositions.clear();
@@ -55,11 +58,16 @@ void ShadowMap::update(Scene& scene, AbstractCamera& camera)
 	for (int i = 0; i < m_splitCount; i++)
 	{
 		Frustum splitFrustum = createSplitFrustum(m_splitPositions[i], m_splitPositions[i + 1], camera);
+		m_splitFrustums.push_back(splitFrustum);
 		BoundingBox splitFrustumAABB = splitFrustum.createAABB();
 		std::vector<GameObject*> localCasters = findShadowCasters(splitFrustumAABB, i, scene);
+		if (i == 0)
+			m_debugCasters = localCasters;
 		m_casters.insert(localCasters.begin(), localCasters.end());
-		glm::mat4 cropMatrix = buildSceneDependentCropMatrix(splitFrustumAABB, localCasters);
+		glm::mat4 lightPvm = m_lightProjection * m_lightView;
+		glm::mat4 cropMatrix = buildSceneDependentCropMatrix(splitFrustumAABB, lightPvm, localCasters, m_receivers);
 		m_cropMatrices[i] = cropMatrix;
+		m_lightPvmMatrices[i] = cropMatrix * lightPvm;
 	}
 }
 
@@ -79,32 +87,30 @@ BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projectio
 	return ndcBox;
 }
 
-void ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB)
+//void ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB)
+//{
+//	glm::mat4 lightPvm = m_lightProjection * m_lightView;
+//
+//	BoundingBox ndcBox = projectBoxIntoNDC(frustumAABB, lightPvm);
+//	// Near plane is at 1.0f, far plane at -1.0f, again, flipped z-coords for reasons
+//	ndcBox.m_max.z = 1.0f; // Do not modify the near plane eg. "Extend" bounding box towards the original near plane
+//
+//	m_cropMatrix = glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
+//	m_croppedLightProjection = m_cropMatrix * m_lightProjection;
+//}
+
+glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm,
+                                                   const std::vector<GameObject*>& casters, const std::vector<Ptr<GameObject>>& receivers)
 {
-	glm::mat4 lightPvm = m_lightProjection * m_lightView;
-
-	BoundingBox ndcBox = projectBoxIntoNDC(frustumAABB, lightPvm);
-	// Near plane is at 1.0f, far plane at -1.0f, again, flipped z-coords for reasons
-	ndcBox.m_max.z = 1.0f; // Do not modify the near plane eg. "Extend" bounding box towards the original near plane
-
-	m_testBox = ndcBox;
-	m_cropMatrix = glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
-	m_croppedLightProjection = m_cropMatrix * m_lightProjection;
-}
-
-glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const std::vector<GameObject*>& casters)
-{
-	glm::mat4 lightPvm = m_lightProjection * m_lightView;
-
 	BoundingBox ndcObjectsAABB;
 
 	// TODO: Seemingly wrapping just the casters does the trick
 	//  THIS MAY BECAUSE WE'RE ONLY SAMPLING ONE CASCADE SO FAR
 	// Project each receiver and caster bounding box
-	//	for (const auto& object : m_receivers)
-	//	{
-	//		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
-	//	}
+//	for (const auto& object : receivers)
+//	{
+//		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
+//	}
 	for (const auto& object : casters)
 	{
 		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
@@ -116,17 +122,27 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 	// The frustum's aabb is a limiting factor, the crop volume can't be bigger
 
 	BoundingBox ndcBox;
-	//	ndcBox.m_min.x = glm::max(ndcObjectsAABB.m_min.x, ndcFrustumAABB.m_min.x);
-	//	ndcBox.m_max.x = glm::min(ndcObjectsAABB.m_max.x, ndcFrustumAABB.m_max.x);
-	//	ndcBox.m_min.y = glm::max(ndcObjectsAABB.m_min.y, ndcFrustumAABB.m_min.y);
-	//	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
-	//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
-	//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
+	ndcBox.m_min.x = glm::max(ndcObjectsAABB.m_min.x, ndcFrustumAABB.m_min.x);
+	ndcBox.m_max.x = glm::min(ndcObjectsAABB.m_max.x, ndcFrustumAABB.m_max.x);
+	ndcBox.m_min.y = glm::max(ndcObjectsAABB.m_min.y, ndcFrustumAABB.m_min.y);
+	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
+//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
+//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
+	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
+	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
+//
+//	ndcBox.m_max.z = 1.0f;
 
-	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
-	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
+//	BoundingBox ndcBox = ndcObjectsAABB;
 
-	m_testBox = ndcBox;
+//	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
+//	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
+
+	if (casters.empty())
+	{
+		ndcBox = ndcFrustumAABB;
+	}
+
 	glm::mat4 cropMatrix =
 	    glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
 	return cropMatrix;

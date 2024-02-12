@@ -106,6 +106,14 @@ void SimpleApplication::onDisplay()
 	glm::vec3 cameraPos = m_scene->m_orbitCamera->getPosition();
 	ImGui::Text("Camera position: %f, %f, %f", cameraPos.x, cameraPos.y, cameraPos.z);
 	ImGui::End();
+
+	if (ImGui::SliderAngle("Sun spin", &m_scene->m_sunSpin))
+	{
+		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), m_scene->m_sunSpin, glm::vec3(0, 1, 0));
+		m_scene->m_lighting->m_shadowSunLight.pos = glm::vec3(rot * glm::vec4(35, 30, 10, 1.0f));
+		m_scene->m_lighting->m_shadowSunLight.direction = glm::normalize(-m_scene->m_lighting->m_shadowSunLight.pos);
+		m_scene->m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
+	}
 }
 
 void SimpleApplication::onUpdate(float dt)

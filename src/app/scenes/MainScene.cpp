@@ -78,6 +78,9 @@ void MainScene::init()
 	m_orbitCamera->setFov(90.f);
 	m_orbitCamera->setRotationX(60);
 	m_orbitCamera->setZFar(160.0f);
+	m_orbitCamera->setZNear(1.1f);
+	m_orbitCamera->setZoomSpeed(m_orbitCamera->getZoomSpeed() * m_orbitCamera->getZNear() / 0.2f);
+	m_orbitCamera->setTranslateSpeed(m_orbitCamera->getTranslateSpeed() * m_orbitCamera->getZNear() / 0.2f);
 
 	// Lights
 	Dg::SunLight* sun = new Dg::SunLight();
@@ -105,7 +108,9 @@ void MainScene::init()
 	Ptr<Dg::TexturedObject> plane =
 	    std::make_shared<Dg::TexturedObject>(planeMesh, Dg::Shaders::instance().getShaderPtr<Dg::PhongShader>());
 	plane->m_modelMatrix = glm::rotate(plane->m_modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
-	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(50.f));
+	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(50.f));
+	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(15.f));
+	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(150.f, 15.f, 15.f));
 	plane->m_shadowCaster = false;
 	addEntity(plane);
 
@@ -139,16 +144,30 @@ void MainScene::init()
 	int minRange = 2;
 	for (int x = -range; x < range; x++)
 	{
-		for (int y = -range; y < range; y++)
-		{
-			if (abs(x) < minRange || abs(y) < minRange)
-				continue;
-			Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
-			Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
-			metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(x * 6.f, Math::randomFloat(0.0f, 10.0f), y * 6.0f));
-			addEntity(metalBox);
-		}
+		if (abs(x) < minRange)
+			continue;
+		Dg::Mesh* boxMesh = RMI.mesh("Data/Models/Duck.gltf");
+		Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
+		metalBox->m_modelMatrix = glm::translate(
+		    metalBox->m_modelMatrix, glm::vec3(Math::randomFloat(-5.0f, 5.0f), Math::randomFloat(0.0f, 10.0f), x * 6.f));
+		addEntity(metalBox);
 	}
+
+	//	int range = 10;
+	//	int minRange = 2;
+	//	for (int x = -range; x < range; x++)
+	//	{
+	//		for (int y = -range; y < range; y++)
+	//		{
+	//			if (abs(x) < minRange || abs(y) < minRange)
+	//				continue;
+	//			Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
+	//			Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
+	//			metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(x * 6.f, Math::randomFloat(0.0f, 10.0f),
+	//y
+	//* 6.0f)); 			addEntity(metalBox);
+	//		}
+	//	}
 
 	// Ecs test
 	ecsTest();
