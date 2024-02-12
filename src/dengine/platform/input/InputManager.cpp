@@ -291,6 +291,7 @@ bool InputManager::isActionTriggered(const std::string& name, bool keyPress)
 			return isKeyJustUp(keyBind.code) && areModifiersActive(keyBind.modifiers);
 		}
 	}
+	return false;
 }
 
 bool InputManager::isActionActive(const std::string& name, bool keyPress)
@@ -310,6 +311,7 @@ bool InputManager::isActionActive(const std::string& name, bool keyPress)
 			return !isKeyPressed(keyBind.code) && areModifiersActive(keyBind.modifiers);
 		}
 	}
+	return false;
 }
 
 void InputManager::bindKey(const std::string& name, Keys::Code code, ModifiersList mods, float value)

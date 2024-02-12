@@ -23,22 +23,22 @@ void checkGLError(const char* where, int line)
 	std::string errString = "<unknown>";
 	switch (err)
 	{
-	case GL_INVALID_ENUM:
-		errString = "GL_INVALID_ENUM";
-		break;
-	case GL_INVALID_VALUE:
-		errString = "GL_INVALID_VALUE";
-		break;
-	case GL_INVALID_OPERATION:
-		errString = "GL_INVALID_OPERATION";
-		break;
-	case GL_INVALID_FRAMEBUFFER_OPERATION:
-		errString = "GL_INVALID_FRAMEBUFFER_OPERATION";
-		break;
-	case GL_OUT_OF_MEMORY:
-		errString = "GL_OUT_OF_MEMORY";
-		break;
-	default:;
+		case GL_INVALID_ENUM:
+			errString = "GL_INVALID_ENUM";
+			break;
+		case GL_INVALID_VALUE:
+			errString = "GL_INVALID_VALUE";
+			break;
+		case GL_INVALID_OPERATION:
+			errString = "GL_INVALID_OPERATION";
+			break;
+		case GL_INVALID_FRAMEBUFFER_OPERATION:
+			errString = "GL_INVALID_FRAMEBUFFER_OPERATION";
+			break;
+		case GL_OUT_OF_MEMORY:
+			errString = "GL_OUT_OF_MEMORY";
+			break;
+		default:;
 	}
 	if (where == 0 || *where == 0)
 		LOG_ERROR("GL error occurred: {}", errString);
@@ -116,15 +116,15 @@ GLuint createShaderFromSource(GLenum eShaderType, const std::string& strShaderTe
 		const char* strShaderType = NULL;
 		switch (eShaderType)
 		{
-		case GL_VERTEX_SHADER:
-			strShaderType = "vertex";
-			break;
-		case GL_FRAGMENT_SHADER:
-			strShaderType = "fragment";
-			break;
-		case GL_GEOMETRY_SHADER:
-			strShaderType = "geometry";
-			break;
+			case GL_VERTEX_SHADER:
+				strShaderType = "vertex";
+				break;
+			case GL_FRAGMENT_SHADER:
+				strShaderType = "fragment";
+				break;
+			case GL_GEOMETRY_SHADER:
+				strShaderType = "geometry";
+				break;
 		}
 
 		LOG_ERROR("Compile failure in {} shader:\n{}", strShaderType, strInfoLog);
@@ -138,7 +138,30 @@ GLuint createShaderFromSource(GLenum eShaderType, const std::string& strShaderTe
 	return shader;
 }
 
-GLuint createShaderFromFile(GLenum eShaderType, const std::string& filename)
+void injectSourceIntoShader(std::string& source, const std::string& shaderName, const std::string& sourceToInject)
+{
+	if (sourceToInject.empty())
+		return;
+
+	// Find version
+	size_t versionPos = source.find("#version");
+	if (versionPos == std::string::npos)
+	{
+		LOG_ERROR("[SHADERS] Shader '{}' does not have a #version declaration!", shaderName);
+		return;
+	}
+	size_t insertPoint;
+	size_t newLine = source.find('\n');
+	if (newLine == std::string::npos)
+	{
+		LOG_ERROR("[SHADERS] Failed to insert defines into shader '{}'!", shaderName);
+		return;
+	}
+	insertPoint = newLine + 1;
+	source.insert(insertPoint, sourceToInject + "\n");
+}
+
+GLuint createShaderFromFile(GLenum eShaderType, const std::string& filename, const std::string& sourceToInject)
 {
 	FILE* f = fopen(filename.c_str(), "rb");
 	if (!f)
@@ -160,7 +183,10 @@ GLuint createShaderFromFile(GLenum eShaderType, const std::string& filename)
 	fclose(f);
 	buffer[length] = '\0';
 
-	GLuint sh = createShaderFromSource(eShaderType, buffer);
+	std::string source(buffer);
+	injectSourceIntoShader(source, filename, sourceToInject);
+
+	GLuint sh = createShaderFromSource(eShaderType, source);
 	delete[] buffer;
 	return sh;
 }
@@ -242,20 +268,20 @@ const char* sourceToString(GLenum src)
 {
 	switch (src)
 	{
-	case GL_DEBUG_SOURCE_API:
-		return "API";
-	case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-		return "Window System";
-	case GL_DEBUG_SOURCE_SHADER_COMPILER:
-		return "Shader Compiler";
-	case GL_DEBUG_SOURCE_THIRD_PARTY:
-		return "Third Party";
-	case GL_DEBUG_SOURCE_APPLICATION:
-		return "Application";
-	case GL_DEBUG_SOURCE_OTHER:
-		return "Other";
-	default:
-		return "<unknown>";
+		case GL_DEBUG_SOURCE_API:
+			return "API";
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+			return "Window System";
+		case GL_DEBUG_SOURCE_SHADER_COMPILER:
+			return "Shader Compiler";
+		case GL_DEBUG_SOURCE_THIRD_PARTY:
+			return "Third Party";
+		case GL_DEBUG_SOURCE_APPLICATION:
+			return "Application";
+		case GL_DEBUG_SOURCE_OTHER:
+			return "Other";
+		default:
+			return "<unknown>";
 	}
 }
 
@@ -263,20 +289,20 @@ const char* typeToString(GLenum type)
 {
 	switch (type)
 	{
-	case GL_DEBUG_TYPE_ERROR:
-		return "Error";
-	case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-		return "Deprecated Behavior";
-	case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-		return "Undefined Behavior";
-	case GL_DEBUG_TYPE_PORTABILITY:
-		return "Portability";
-	case GL_DEBUG_TYPE_PERFORMANCE:
-		return "Performance";
-	case GL_DEBUG_TYPE_OTHER:
-		return "Other";
-	default:
-		return "<unknown>";
+		case GL_DEBUG_TYPE_ERROR:
+			return "Error";
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+			return "Deprecated Behavior";
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+			return "Undefined Behavior";
+		case GL_DEBUG_TYPE_PORTABILITY:
+			return "Portability";
+		case GL_DEBUG_TYPE_PERFORMANCE:
+			return "Performance";
+		case GL_DEBUG_TYPE_OTHER:
+			return "Other";
+		default:
+			return "<unknown>";
 	}
 }
 
@@ -284,16 +310,16 @@ const char* severityToString(GLenum severity)
 {
 	switch (severity)
 	{
-	case GL_DEBUG_SEVERITY_LOW:
-		return "Low";
-	case GL_DEBUG_SEVERITY_MEDIUM:
-		return "Medium";
-	case GL_DEBUG_SEVERITY_HIGH:
-		return "High";
-	case GL_DEBUG_SEVERITY_NOTIFICATION:
-		return "Notice";
-	default:
-		return "<unknown>";
+		case GL_DEBUG_SEVERITY_LOW:
+			return "Low";
+		case GL_DEBUG_SEVERITY_MEDIUM:
+			return "Medium";
+		case GL_DEBUG_SEVERITY_HIGH:
+			return "High";
+		case GL_DEBUG_SEVERITY_NOTIFICATION:
+			return "Notice";
+		default:
+			return "<unknown>";
 	}
 }
 

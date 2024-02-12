@@ -5,7 +5,6 @@
 #include "dengine/scene/SceneRenderTarget.h"
 #include "app/scenes/MainScene.h"
 
-
 class SimpleApplication : public Dengine::Application
 {
   public:
@@ -16,6 +15,8 @@ class SimpleApplication : public Dengine::Application
 	Dg::DisplayOptions m_secondDisplayOptions;
 
 	bool m_secondaryWindowHovered{false};
+//	Dg::RenderOptions::ShadowType m_shadowType{Dg::RenderOptions::ShadowType::PSSM_INSTANCED};
+	int m_shadowType{static_cast<int>(Dg::RenderOptions::ShadowType::PSSM_INSTANCED)};
 
 	SimpleApplication();
 

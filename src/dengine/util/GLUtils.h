@@ -39,9 +39,10 @@ GLuint createShaderFromSource(GLenum eShaderType, const std::string& strShaderTe
  *
  * \param eShaderType we support GL_VERTEX_SHADER, GL_FRAGMENT_SHADER and GL_GEOMETRY_SHADER values
  * \param filename file to use as a shader source
+ * \param sourceToInject text to insert right after the glsl version declaration, do nothing if its an empty string
  * \return opengl shader id or 0 on failure
  */
-GLuint createShaderFromFile(GLenum eShaderType, const std::string& filename);
+GLuint createShaderFromFile(GLenum eShaderType, const std::string& filename, const std::string& sourceToInject);
 
 static bool linkProgram(GLuint program);
 

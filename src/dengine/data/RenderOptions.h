@@ -13,7 +13,14 @@ namespace Dg
  */
 class RenderOptions
 {
-public:
+  public:
+	enum class ShadowType
+	{
+		REGULAR = 0,
+		PSSM_GEO = 1,
+		PSSM_INSTANCED = 2,
+	};
+
 	bool multisample;
 	unsigned int samples;
 	bool framebufferAlpha;
@@ -22,9 +29,9 @@ public:
 	bool selection;
 	int lightingModel;
 	bool shadows;
-	bool shadowsUseInstancedRendering;
+	RenderOptions::ShadowType shadowType;
 
-	Frustum tightShadowFrustum;
+	Frustum tightShadowFrustum; // TODO: Remove
 
 	glm::vec3 clearColor;
 

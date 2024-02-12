@@ -30,7 +30,7 @@ public:
 	std::weak_ptr<Framebuffer> getFramebuffer(const std::string& name);
 	void addFramebuffer(const std::string& name, const std::shared_ptr<Framebuffer>& framebuffer);
 
-	const RenderOptions& getRenderOptions() const;
+	RenderOptions& getRenderOptions();
 	void setRenderOptions(const RenderOptions& renderOptions);
 };
 

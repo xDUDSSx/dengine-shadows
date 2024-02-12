@@ -1,7 +1,5 @@
 #version 330 core
 
-//out vec4 FragColor;
-
 layout (location = 0) out vec4 FragColor;
 
 // WBOIT
@@ -104,11 +102,17 @@ uniform SunLight sunLights[MAX_SUN_LIGHTS];
 uniform int spotLightsCount;
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
-// Shadow mapping
+#ifdef PSSM
 uniform sampler2DArray u_shadowMap;
+#else
+uniform sampler2D u_shadowMap;
+#endif
+
+// Shadow mapping
 //uniform vec3 u_lightPos;
 //uniform mat4 u_lightView;
 
+#ifdef PSSM
 #define PSSM_CASCADES 4
 
 struct ShadowSunLight {
@@ -123,6 +127,7 @@ struct ShadowSunLight {
 	float splitPlanes[PSSM_CASCADES];
 };
 uniform ShadowSunLight u_shadowSunLight;
+#endif
 
 float map(float value, float min1, float max1, float min2, float max2) {
 	return min2 + (value - min1) * (max2 - min2) / (max1 - min1);

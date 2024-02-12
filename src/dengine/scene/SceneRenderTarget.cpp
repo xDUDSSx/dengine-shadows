@@ -16,7 +16,7 @@ void SceneRenderTarget::setOutputFramebuffer(std::weak_ptr<Framebuffer> framebuf
 	outputFramebuffer = std::move(framebuffer);
 }
 
-const RenderOptions& SceneRenderTarget::getRenderOptions() const
+RenderOptions& SceneRenderTarget::getRenderOptions()
 {
 	return renderOptions;
 }

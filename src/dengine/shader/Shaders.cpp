@@ -24,7 +24,7 @@ bool Shaders::load()
 
 	bool ok = true;
 
-	ok &= createShader<PhongShader>("Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl");
+	ok &= createShader<PhongShader>("Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl", "", "#define PSSM");
 	ok &= createShader<ColorShader>("Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
 	ok &= createShader<DepthShader>("Data/Shaders/depthVert.glsl", "");
 	ok &= createShader<PSSMShader>("Data/Shaders/depthVert.glsl", "", "Data/Shaders/pssmGeo.glsl");
@@ -48,20 +48,26 @@ bool Shaders::reload()
 		return true;
 	}
 
-	RMI.m_forceReload = true;
 	bool ok = true;
 	for (const auto& [key, value] : m_shaders)
 	{
-		ok &= reloadShader(*value, value->m_vertSource, value->m_fragSource);
+		ok &= reloadShader(*value, value->m_vertSource, value->m_fragSource, value->m_geoSource, value->m_injectedSource);
 	}
-	RMI.m_forceReload = false;
 
 	return ok;
 }
 
 bool Shaders::reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource)
 {
-	GLuint id = RMI.shader(vertSource, fragSource);
+	return reloadShader(shader, vertSource, fragSource, "", "");
+}
+
+bool Shaders::reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource,
+                              const std::string& geoSource, const std::string& sourceToInject)
+{
+	RMI.m_forceReload = true;
+	GLuint id = RMI.shaderGI(vertSource, fragSource, geoSource, sourceToInject);
+	RMI.m_forceReload = false;
 	if (id != 0)
 	{
 		shader.m_id = id;

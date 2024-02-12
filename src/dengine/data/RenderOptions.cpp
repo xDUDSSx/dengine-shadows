@@ -16,5 +16,5 @@ RenderOptions::RenderOptions()
 	clearColor = glm::vec3(0.2f, 0.2f, 0.2f);
 
 	shadows = false;
-	shadowsUseInstancedRendering = false;
+	shadowType = ShadowType::PSSM_INSTANCED;
 }

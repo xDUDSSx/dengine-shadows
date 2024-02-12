@@ -34,7 +34,7 @@ bool SimpleApplication::onInit()
 	renderOptions.multisample = false;
 	renderOptions.selection = false;
 	renderOptions.shadows = true;
-	renderOptions.shadowsUseInstancedRendering = true;
+	renderOptions.shadowType = Dg::RenderOptions::ShadowType::PSSM_INSTANCED;
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -66,6 +66,8 @@ void SimpleApplication::onDisplay()
 
 	int width = m_windowSize.x;
 	int height = m_windowSize.y;
+
+	m_renderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 
 	m_scene->draw(width, height, *m_renderTarget, m_displayOptions);
 
@@ -103,11 +105,9 @@ void SimpleApplication::onDisplay()
 
 	ImGui::End();
 
-	ImGui::Begin("Info", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Control panel", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	glm::vec3 cameraPos = m_scene->m_orbitCamera->getPosition();
 	ImGui::Text("Camera position: %f, %f, %f", cameraPos.x, cameraPos.y, cameraPos.z);
-	ImGui::End();
-
 	if (ImGui::SliderAngle("Sun spin", &m_scene->m_sunSpin))
 	{
 		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), m_scene->m_sunSpin, glm::vec3(0, 1, 0));
@@ -115,6 +115,10 @@ void SimpleApplication::onDisplay()
 		m_scene->m_lighting->m_shadowSunLight.direction = glm::normalize(-m_scene->m_lighting->m_shadowSunLight.pos);
 		m_scene->m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
 	}
+	const char* items[] = {"Regular", "PSSM Geometry shader", "PSSM Instancing"};
+	ImGui::Combo("Shadow type", &m_shadowType, items, 3, 4);
+	ImGui::End();
+
 }
 
 void SimpleApplication::onUpdate(float dt)

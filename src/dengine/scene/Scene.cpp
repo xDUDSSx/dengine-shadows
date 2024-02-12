@@ -842,24 +842,30 @@ void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOp
 			// context.m_renderType = Renderer::RenderType::DEPTH;
 			context.m_renderType = Renderer::RenderType::CUSTOM;
 
-			if (renderOptions.shadowsUseInstancedRendering)
+			switch (renderOptions.shadowType)
 			{
-				pssmInstancingShader->cropMatrices = shadowMap.m_cropMatrices;
-				pssmInstancingShader->splitBegin = shadowCaster->m_shadowSplitBegin;
-				pssmInstancingShader->splitEnd = shadowCaster->m_shadowSplitEnd;
+				case RenderOptions::ShadowType::PSSM_GEO:
+					pssmShader->cropMatrices = shadowMap.m_cropMatrices;
+					pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+					pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
+					//				shadowShader->m_lightPos = lightPos;
+					//				shadowShader->m_zFar = far_plane;
+					//				shadowShader->getSunPositionFromViewMatrix(view);
+					context.m_instanceCount = 0;
+					context.m_shader = pssmShader;
+					break;
+				case RenderOptions::ShadowType::PSSM_INSTANCED:
+					pssmInstancingShader->cropMatrices = shadowMap.m_cropMatrices;
+					pssmInstancingShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+					pssmInstancingShader->splitEnd = shadowCaster->m_shadowSplitEnd;
 
-				// Render as many instances as the number of cascades the shadow caster is part of
-				context.m_instanceCount = shadowCaster->m_shadowSplitEnd - shadowCaster->m_shadowSplitBegin + 1;
-				context.m_shader = pssmInstancingShader;
-			} else {
-				pssmShader->cropMatrices = shadowMap.m_cropMatrices;
-				pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
-				pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
-				//				shadowShader->m_lightPos = lightPos;
-				//				shadowShader->m_zFar = far_plane;
-				//				shadowShader->getSunPositionFromViewMatrix(view);
-				context.m_instanceCount = 0;
-				context.m_shader = pssmShader;
+					// Render as many instances as the number of cascades the shadow caster is part of
+					context.m_instanceCount = shadowCaster->m_shadowSplitEnd - shadowCaster->m_shadowSplitBegin + 1;
+					context.m_shader = pssmInstancingShader;
+					break;
+				case RenderOptions::ShadowType::REGULAR:
+					// TODO: Implement simple shadow maps again
+					break;
 			}
 
 			shadowCaster->prepareRenderContext(context);

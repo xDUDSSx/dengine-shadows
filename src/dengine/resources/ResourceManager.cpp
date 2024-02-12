@@ -106,6 +106,18 @@ GLuint ResourceManager::shaderG(const std::string& vertShader, const std::string
 GLuint ResourceManager::shaderG(const std::string& alias, const std::string& vertShader, const std::string& fragShader,
                                 const std::string& geoShader)
 {
+	return shaderGI(alias, vertShader, fragShader, geoShader, "");
+}
+
+GLuint ResourceManager::shaderGI(const std::string& vertShader, const std::string& fragShader, const std::string& geoShader,
+                                 const std::string& sourceToInject)
+{
+	return shaderGI(NO_ALIAS, vertShader, fragShader, geoShader, sourceToInject);
+}
+
+GLuint ResourceManager::shaderGI(const std::string& alias, const std::string& vertShader, const std::string& fragShader,
+                                 const std::string& geoShader, const std::string& sourceToInject)
+{
 	size_t id = hash_string(vertShader, fragShader, geoShader);
 	bool success = false;
 	auto data = getData(alias, id, ResourceType::Shader, &success);
@@ -114,7 +126,7 @@ GLuint ResourceManager::shaderG(const std::string& alias, const std::string& ver
 		if (data.get() == nullptr)
 		{
 			// Load shader
-			GLuint shaderId = loadShader(vertShader, fragShader, geoShader);
+			GLuint shaderId = loadShader(vertShader, fragShader, geoShader, sourceToInject);
 			if (shaderId)
 			{
 				std::string path =
@@ -407,23 +419,23 @@ void ResourceManager::createDefaultResources(const std::vector<Resource>& defaul
 	{
 		switch (resource.resourceType)
 		{
-		case ResourceType::Shader:
-			// TODO: (DR) Cannot load shader from a single path, need multiple or some path convention
-			break;
-		case ResourceType::Texture:
-			if (texture(resource.alias, resource.path))
-			{
-				registerDefault(resource.alias);
-			}
-			break;
-		case ResourceType::Model:
-			m_forceModelNormalize = true;
-			if (mesh(resource.alias, resource.path))
-			{
-				registerDefault(resource.alias);
-			}
-			m_forceModelNormalize = false;
-			break;
+			case ResourceType::Shader:
+				// TODO: (DR) Cannot load shader from a single path, need multiple or some path convention
+				break;
+			case ResourceType::Texture:
+				if (texture(resource.alias, resource.path))
+				{
+					registerDefault(resource.alias);
+				}
+				break;
+			case ResourceType::Model:
+				m_forceModelNormalize = true;
+				if (mesh(resource.alias, resource.path))
+				{
+					registerDefault(resource.alias);
+				}
+				m_forceModelNormalize = false;
+				break;
 		}
 	}
 }
@@ -440,7 +452,8 @@ GLuint ResourceManager::loadTexture(const std::string& path)
 	return id;
 }
 
-GLuint ResourceManager::loadShader(const std::string& vertShader, const std::string& fragShader, const std::string& geoShader)
+GLuint ResourceManager::loadShader(const std::string& vertShader, const std::string& fragShader, const std::string& geoShader,
+                                   const std::string& sourceToInject)
 {
 	GLuint id = -1;
 	std::vector<GLuint> shaderList;
@@ -455,14 +468,14 @@ GLuint ResourceManager::loadShader(const std::string& vertShader, const std::str
 		return 0;
 	}
 
-	LOG_INFO("[SHADER] Loading shader: vert: {}, frag: {}, geo: {}", vert ? vertShader : "none", frag ? fragShader : "none",
-	         geo ? geoShader : "none");
+	LOG_INFO("[SHADER] Loading shader: vert: {}, frag: {}, geo: {}, injected code: {}", vert ? vertShader : "none",
+	         frag ? fragShader : "none", geo ? geoShader : "none", sourceToInject.empty() ? "none" : sourceToInject);
 
-	shaderList.push_back(GLUtils::createShaderFromFile(GL_VERTEX_SHADER, vertShader));
+	shaderList.push_back(GLUtils::createShaderFromFile(GL_VERTEX_SHADER, vertShader, sourceToInject));
 	if (frag)
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_FRAGMENT_SHADER, fragShader));
+		shaderList.push_back(GLUtils::createShaderFromFile(GL_FRAGMENT_SHADER, fragShader, sourceToInject));
 	if (geo)
-		shaderList.push_back(GLUtils::createShaderFromFile(GL_GEOMETRY_SHADER, geoShader));
+		shaderList.push_back(GLUtils::createShaderFromFile(GL_GEOMETRY_SHADER, geoShader, sourceToInject));
 
 	// Check for compilation error
 	for (const auto& stage : shaderList)
@@ -525,22 +538,22 @@ void ResourceManager::disposeResource(std::shared_ptr<Resource>& resource)
 {
 	switch (resource->resourceType)
 	{
-	case ResourceType::Texture:
-		LOG_INFO("[TEXTURE] Disposing texture '{}'", resource->path);
-		disposeTexture(*(std::static_pointer_cast<GLuint>(resource->data).get()));
-		break;
-	case ResourceType::Shader:
-		LOG_INFO("[SHADER] Disposing shader '{}'", resource->path);
-		disposeShader(*(std::static_pointer_cast<GLuint>(resource->data).get()));
-		break;
-	case ResourceType::Model:
-		LOG_INFO("[MODEL] Disposing model '{}'", resource->path);
-		disposeModel(std::static_pointer_cast<Mesh>(resource->data).get());
-		break;
-	default:
-		LOG_WARN("[RESOURCE MANAGER] Unknown resource type to dispose! Id: {}, Type: {}, Path: {}", resource->hashId,
-		         std::string(magic_enum::enum_name(resource->resourceType)), resource->path);
-		break;
+		case ResourceType::Texture:
+			LOG_INFO("[TEXTURE] Disposing texture '{}'", resource->path);
+			disposeTexture(*(std::static_pointer_cast<GLuint>(resource->data).get()));
+			break;
+		case ResourceType::Shader:
+			LOG_INFO("[SHADER] Disposing shader '{}'", resource->path);
+			disposeShader(*(std::static_pointer_cast<GLuint>(resource->data).get()));
+			break;
+		case ResourceType::Model:
+			LOG_INFO("[MODEL] Disposing model '{}'", resource->path);
+			disposeModel(std::static_pointer_cast<Mesh>(resource->data).get());
+			break;
+		default:
+			LOG_WARN("[RESOURCE MANAGER] Unknown resource type to dispose! Id: {}, Type: {}, Path: {}", resource->hashId,
+			         std::string(magic_enum::enum_name(resource->resourceType)), resource->path);
+			break;
 	}
 }
 

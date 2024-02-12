@@ -62,6 +62,13 @@ class Shaders
 	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
 	bool createShader(const std::string& vertSource, const std::string& fragSource, const std::string& geoSource)
 	{
+		return createShader<T>(vertSource, fragSource, geoSource, "");
+	}
+
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
+	bool createShader(const std::string& vertSource, const std::string& fragSource, const std::string& geoSource,
+	                  const std::string& sourceToInject)
+	{
 		std::size_t type = typeid(T).hash_code();
 		if (m_shaders.contains(type))
 		{
@@ -70,7 +77,7 @@ class Shaders
 		}
 
 		bool success;
-		auto shader = loadShader<T>(success, vertSource, fragSource, geoSource);
+		auto shader = loadShader<T>(success, vertSource, fragSource, geoSource, sourceToInject);
 		if (!success)
 		{
 			LOG_ERROR("[SHADERS] Failed to create shader '{}'!");
@@ -108,7 +115,14 @@ class Shaders
 	std::shared_ptr<T> loadShader(bool& success, const std::string& vertSource, const std::string& fragSource,
 	                              const std::string& geoSource)
 	{
-		GLuint id = RMI.shaderG(vertSource, fragSource, geoSource);
+		return loadShader<T>(success, vertSource, fragSource, "", "");
+	}
+
+	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
+	std::shared_ptr<T> loadShader(bool& success, const std::string& vertSource, const std::string& fragSource,
+	                              const std::string& geoSource, const std::string& sourceToInject)
+	{
+		GLuint id = RMI.shaderGI(vertSource, fragSource, geoSource, sourceToInject);
 		if (id == 0)
 		{
 			success = false;
@@ -122,6 +136,8 @@ class Shaders
 	}
 
 	bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource);
+	bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource, const std::string& geoSource,
+	                  const std::string& sourceToInject);
 	bool checkForError(Shader& shader);
 };
 
