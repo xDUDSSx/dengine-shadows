@@ -28,7 +28,8 @@ public:
 	bool showDebugFrustumAABBs{false};
 	bool showDebugFrustums{true};
 	bool showDebugShadowMapVolumes{true};
-	bool showDebugVisualizeShadowMap{false};
+	bool debugVisualizeShadowMap{false};
+	bool debugDrawShadowMap{false};
 
 	DisplayOptions() = default;
 

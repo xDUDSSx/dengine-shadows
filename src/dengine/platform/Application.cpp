@@ -109,17 +109,6 @@ int Application::init(const char* title)
 		return 1;
 	}
 
-	//	// Set icon
-	//	int x, y, channels;
-	//	constexpr int desiredChannels = 4;
-	//	auto* pixels = stbi_load("Data/Textures/logoi3t.png", &x, &y, &channels, desiredChannels);
-	//	if (pixels)
-	//	{
-	//		GLFWimage image{x, y, pixels};
-	//		glfwSetWindowIcon(m_mainWindow, 1, &image);
-	//	}
-	//	stbi_image_free(pixels);
-
 	glfwSetKeyCallback(m_window, glfwKeyCallback);
 	glfwMakeContextCurrent(m_window);
 	gladLoadGL(glfwGetProcAddress);

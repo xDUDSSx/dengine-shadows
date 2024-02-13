@@ -22,6 +22,7 @@
 #include "dengine/lights/ShadowMap.h"
 #include "dengine/util/DebugDraw.h"
 #include "dengine/util/Color.h"
+#include "dengine/shader/LayeredShadowMapDisplayShader.h"
 
 namespace Dg
 {
@@ -285,7 +286,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			PhongShader* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
 			// Assign the rendered shadow map texture to phong shader
-			phongShader->m_visualizeShadowMap = displayOptions.showDebugVisualizeShadowMap;
+			phongShader->m_visualizeShadowMap = displayOptions.debugVisualizeShadowMap;
 			phongShader->m_isUsingPSSM = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
@@ -435,6 +436,27 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 
 		// Return framebuffer
 		renderTarget.setOutputFramebuffer(WPtr<Framebuffer>(mainFBO));
+
+		// Draw the shadow map depth textures on top of the main fbo
+		if (displayOptions.debugDrawShadowMap)
+		{
+			mainFBO->start();
+			{
+				glDisable(GL_BLEND);
+				glDisable(GL_DEPTH_TEST);
+
+				auto layeredShadowMapDisplayShader = Shaders::instance().getShaderPtr<LayeredShadowMapDisplayShader>();
+				layeredShadowMapDisplayShader->use();
+				layeredShadowMapDisplayShader->m_layered = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
+				layeredShadowMapDisplayShader->m_sourceTextureId = shadowFBO->getDepthAttachment()->m_id;
+				layeredShadowMapDisplayShader->m_resolution = glm::vec2(width, height);
+				layeredShadowMapDisplayShader->setUniforms();
+
+				// Upscale selection buffer and apply stencil
+				RMI.meshByAlias(Shaper::screenQuad)->render();
+			}
+			mainFBO->end(true);
+		}
 	}
 
 	////////

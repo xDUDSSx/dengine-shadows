@@ -16,6 +16,7 @@ using namespace Dg;
 #include "dengine/shader/PSSMInstancingShader.h"
 
 #include "dengine/platform/Logger.h"
+#include "LayeredShadowMapDisplayShader.h"
 
 bool Shaders::load()
 {
@@ -35,6 +36,7 @@ bool Shaders::load()
 	ok &= createShader<WBOITCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl");
 	ok &= createShader<BoxBlurShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/boxBlurFrag.glsl");
 	ok &= createShader<SelectionCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/selectionCompositeFrag.glsl");
+	ok &= createShader<LayeredShadowMapDisplayShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/layeredShadowMapDisplayFrag.glsl");
 	ok &= createShader<ScreenOverlayShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/screenOverlayFrag.glsl");
 
 	loaded = true;

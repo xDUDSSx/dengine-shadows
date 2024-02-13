@@ -127,7 +127,8 @@ void SimpleApplication::onDisplay()
 	const char* items[] = {"Regular", "PSSM Geometry shader", "PSSM Instancing"};
 	ImGui::Combo("Shadow type", &m_shadowType, items, 3, 4);
 	ImGui::SliderFloat("Split scheme weight", &renderOptions.pssmShadowsSplitSchemeWeight, 0.0f, 1.0f);
-	ImGui::Checkbox("Visualize shadow map", &m_displayOptions.showDebugVisualizeShadowMap);
+	ImGui::Checkbox("Visualize shadow map", &m_displayOptions.debugVisualizeShadowMap);
+	ImGui::Checkbox("Show shadow maps", &m_displayOptions.debugDrawShadowMap);
 	if (ImGui::Checkbox("Limit FPS", &m_limitFps))
 	{
 		glfwSwapInterval(m_limitFps ? 1 : 0);
