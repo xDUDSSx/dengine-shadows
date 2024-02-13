@@ -127,6 +127,7 @@ struct ShadowSunLight {
 uniform ShadowSunLight u_shadowSunLight;
 
 uniform bool u_visualizeShadowMap = false;
+uniform float u_shadowBias = 0.001;
 
 float map(float value, float min1, float max1, float min2, float max2) {
 	return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
@@ -169,8 +170,8 @@ float calculateShadowFactor(mat4 lightPvm, int splitIndex, vec3 normal, vec3 lig
 	float shadowDepth = texture(u_shadowMap, lightNDCSpaceFragPos.xy).r;
 #endif
 
-	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
-//	float bias = 0.001;
+//	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
+	float bias = u_shadowBias;
 	float shadow = fragDepth + bias > shadowDepth ? 1.0 : 0.0;
 
 	if (shadowDepth >= 1.0)

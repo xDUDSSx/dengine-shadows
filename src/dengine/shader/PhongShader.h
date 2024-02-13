@@ -37,6 +37,7 @@ protected:
 	GLint m_shadowMapLoc; // TODO: Add support for multiple shadow samplers
 
 	GLint m_visualizeShadowMapLoc;
+	GLint m_shadowBiasLoc;
 
 	// TODO: (DR) Location IDs should probably be stored in some kind of map with string keys ideally
 
@@ -45,8 +46,9 @@ public:
 	LightingModel m_lightingModel{BLINN_PHONG};
 	GLuint m_shadowMapId;
 
-	bool m_visualizeShadowMap = true;
 	bool m_isUsingPSSM = true;
+	bool m_visualizeShadowMap = true;
+	float m_shadowBias = 0.001f;
 
 	explicit PhongShader(GLuint id);
 

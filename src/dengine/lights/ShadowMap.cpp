@@ -1,5 +1,7 @@
 #include "ShadowMap.h"
 
+#include <chrono>
+
 #include "dengine/scene/Scene.h"
 #include "dengine/framebuffer/Framebuffer.h"
 #include "dengine/camera/AbstractCamera.h"
@@ -84,6 +86,8 @@ void ShadowMap::update(ShadowType shadowType, Scene& scene, AbstractCamera& came
 
 	// Assuming all GameObjects have up to date aabb bounding boxes!
 
+	auto start = std::chrono::high_resolution_clock::now();
+
 	// Adjust camera planes and create tightShadowFrustum
 	computeTightShadowFrustum(camera, scene);
 
@@ -135,6 +139,9 @@ void ShadowMap::update(ShadowType shadowType, Scene& scene, AbstractCamera& came
 			m_lightPvmMatrices[i] = cropMatrix * lightPvm;
 		}
 	}
+	auto stop = std::chrono::high_resolution_clock::now();
+	auto duration = duration_cast<std::chrono::microseconds>(stop - start);
+	m_cpuUpdateTime = duration.count();
 }
 
 BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projection)

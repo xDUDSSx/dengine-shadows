@@ -19,4 +19,5 @@ RenderOptions::RenderOptions()
 	shadowType = ShadowType::PSSM_INSTANCED;
 	pssmShadowsSplitSchemeWeight = 0.5f;
 	shadowResolution = 1024;
+	shadowBias = 0.0003f;
 }

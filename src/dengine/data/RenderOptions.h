@@ -32,6 +32,7 @@ class RenderOptions
 	RenderOptions::ShadowType shadowType;
 	float pssmShadowsSplitSchemeWeight;
 	int shadowResolution;
+	float shadowBias;
 
 	Frustum tightShadowFrustum; // TODO: Remove
 

@@ -286,6 +286,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
 			// Assign the rendered shadow map texture to phong shader
 			phongShader->m_visualizeShadowMap = displayOptions.debugVisualizeShadowMap;
+			phongShader->m_shadowBias = renderOptions.shadowBias;
 			phongShader->m_isUsingPSSM = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
@@ -378,10 +379,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		{
 			Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
 			DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::YELLOW, view, projection);
-			DebugDraw::drawFrustum(shadowMap->m_croppedLightProjection * shadowMap->m_lightView, Color::TEAL, view, projection);
 
-			DebugDraw::drawLineBox(shadowMap->m_testBox, Color::RED, view, projection);
-			//		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
 			DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
 
 			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, glm::vec3(0.7f, 0.3f, 0.1f), view, projection);

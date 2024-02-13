@@ -48,9 +48,6 @@ class ShadowMap
 	Frustum m_tightCameraFrustum;
 	BoundingBox m_tightCameraFrustumAABB;
 
-	glm::mat4 m_cropMatrix{1.0f}; // TODO: Remove
-	glm::mat4 m_croppedLightProjection{1.0f}; // TODO: Remove
-
 	int m_splitCount{PSSM_CASCADES};
 	std::vector<Frustum> m_splitFrustums;
 	std::vector<BoundingBox> m_splitFrustumsAABBs;
@@ -60,10 +57,8 @@ class ShadowMap
 
 	// Debug
 	std::vector<GameObject*> m_debugCasters;
-	BoundingBox m_testBox; // TODO: Remove
-
-  public:
-//	WPtr<Framebuffer> m_shadowFBO;
+	long long m_cpuUpdateTime{0};
+	long long m_cpuRenderTime{0};
 
 	/**
 	 * Sets the position and direction of the light space volume.

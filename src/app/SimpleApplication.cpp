@@ -144,6 +144,9 @@ void SimpleApplication::onDisplay()
 	{
 		renderOptions.shadowResolution = m_shadowResolution;
 	}
+	ImGui::InputFloat("Shadow bias", &renderOptions.shadowBias, 0.00001f, 0.00005f, "%.07f");
+
+	ImGui::Text(std::to_string(m_scene->m_lighting->m_shadowSunLight.m_shadowMap->m_cpuUpdateTime).c_str());
 
 	ImGui::End();
 }
