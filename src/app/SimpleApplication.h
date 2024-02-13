@@ -20,7 +20,7 @@ class SimpleApplication : public Dengine::Application
 	bool m_limitFps{true};
 
 	float m_mainCameraNear = 1.5f;
-	float m_mainCameraFar = 360.0f;
+	float m_mainCameraFar = 500.0f;
 
 	SimpleApplication();
 

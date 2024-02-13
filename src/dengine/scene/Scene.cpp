@@ -19,7 +19,6 @@
 #include "SceneRenderTarget.h"
 #include "dengine/util/HSLColor.h"
 #include "dengine/shader/Shaders.h"
-#include "dengine/shader/ShadowShader.h"
 #include "dengine/lights/ShadowMap.h"
 #include "dengine/util/DebugDraw.h"
 #include "dengine/util/Color.h"
@@ -39,20 +38,44 @@ void Scene::draw(int width, int height, SceneRenderTarget& renderTarget, const D
 	m_camera->size(width, height);
 	m_camera->update();
 
-	const RenderOptions& renderOptions = renderTarget.getRenderOptions();
-
-	// Adjust camera planes and create tightShadowFrustum
-	if (renderOptions.shadows)
+	if (renderTarget.getRenderOptions().shadows)
 	{
-		Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
-		// Update shadow maps
-		shadowMap->m_splitSchemeWeight = renderOptions.pssmShadowsSplitSchemeWeight;
-		shadowMap->update(renderOptions.shadowType, *this, *m_camera);
-		// Draw shadow maps
-		shadowMap->drawShadowBuffer(renderTarget.getFramebuffer("shadows"), renderOptions, displayOptions);
+		renderShadowMap(renderTarget, displayOptions);
 	}
 
 	return draw(width, height, m_camera->getView(), m_camera->getProjection(), renderTarget, displayOptions);
+}
+
+void Scene::renderShadowMap(SceneRenderTarget& renderTarget, const DisplayOptions& displayOptions)
+{
+	const RenderOptions& renderOptions = renderTarget.getRenderOptions();
+	Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
+
+	// Check for shadow map type changes
+	if (shadowMap->m_shadowType != renderOptions.shadowType)
+	{
+		bool wasUsingPSSM = shadowMap->m_shadowType != Dg::RenderOptions::ShadowType::REGULAR;
+		bool wantsToUsePSSM = renderOptions.shadowType != Dg::RenderOptions::ShadowType::REGULAR;
+		if (wasUsingPSSM != wantsToUsePSSM)
+		{
+			// Recreate the shadow map fbo
+			Ptr<Framebuffer> newShadowFBO = shadowMap->createShadowFramebuffer(renderOptions.shadowType);
+			renderTarget.removeFramebuffer("shadows");
+			renderTarget.addFramebuffer("shadows", newShadowFBO);
+
+			// Reload phong shader with or without the PSSM define
+			auto* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
+			LOG_INFO("Phong shader ID before reload: {}", phongShader->m_id);
+			Shaders::reloadShader(*phongShader, phongShader->m_vertSource, phongShader->m_fragSource, phongShader->m_geoSource,
+			                      wantsToUsePSSM ? "#define PSSM" : "");
+		}
+	}
+
+	// Update shadow maps
+	shadowMap->m_splitSchemeWeight = renderOptions.pssmShadowsSplitSchemeWeight;
+	shadowMap->update(renderOptions.shadowType, *this, *m_camera);
+	// Draw shadow maps
+	shadowMap->drawShadowBuffer(renderTarget.getFramebuffer("shadows"), renderOptions, displayOptions);
 }
 
 void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
@@ -262,6 +285,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
 			// Assign the rendered shadow map texture to phong shader
 			phongShader->m_visualizeShadowMap = displayOptions.showDebugVisualizeShadowMap;
+			phongShader->m_isUsingPSSM = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
 			if (renderOptions.shadows)
@@ -350,26 +374,38 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			//		DebugDraw::drawLineBox(&shadowMap->m_testBox2[0], Color::BLACK, view, projection);
 			DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
 
-			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::BROWN, view, projection);
+			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, glm::vec3(0.7f, 0.3f, 0.1f), view, projection);
 			if (displayOptions.showDebugFrustumAABBs)
 				DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
 			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
 			if (displayOptions.showDebugFrustumAABBs)
 				DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
 
-			glm::vec3 colors[] = {Color::GREEN, Color::YELLOW, Color::RED, Color::BLUE};
-			for (int i = 0; i < PSSM_CASCADES; i++)
+			const glm::vec3 colors[] = {Color::GREEN, Color::YELLOW, Color::RED, Color::BLUE};
+			if (renderOptions.shadowType != RenderOptions::ShadowType::REGULAR)
 			{
-				if (displayOptions.showDebugFrustums)
-					DebugDraw::drawLineBox(shadowMap->m_splitFrustums[i].m_corners, colors[i] - glm::vec3(0.18f), view,
-					                       projection);
-				if (displayOptions.showDebugFrustumAABBs)
-					DebugDraw::drawLineBox(shadowMap->m_splitFrustumsAABBs[i], colors[i] - glm::vec3(0.30f), view, projection);
+				for (int i = 0; i < PSSM_CASCADES; i++)
+				{
+					if (displayOptions.showDebugFrustums)
+						DebugDraw::drawLineBox(shadowMap->m_splitFrustums[i].m_corners, colors[i] - glm::vec3(0.18f), view,
+						                       projection);
+					if (displayOptions.showDebugFrustumAABBs)
+						DebugDraw::drawLineBox(shadowMap->m_splitFrustumsAABBs[i], colors[i] - glm::vec3(0.30f), view,
+						                       projection);
+					if (displayOptions.showDebugShadowMapVolumes)
+					{
+						glm::mat4 croppedLightProjection =
+						    shadowMap->m_cropMatrices[i] * shadowMap->m_lightProjection * shadowMap->m_lightView;
+						DebugDraw::drawFrustum(croppedLightProjection, colors[i], view, projection);
+					}
+				}
+			}
+			else
+			{
 				if (displayOptions.showDebugShadowMapVolumes)
 				{
-					glm::mat4 croppedLightProjection =
-					    shadowMap->m_cropMatrices[i] * shadowMap->m_lightProjection * shadowMap->m_lightView;
-					DebugDraw::drawFrustum(croppedLightProjection, colors[i], view, projection);
+					glm::mat4 croppedLightProjection = shadowMap->m_lightPvmMatrices[0];
+					DebugDraw::drawFrustum(croppedLightProjection, colors[0], view, projection);
 				}
 			}
 
@@ -725,6 +761,20 @@ void Scene::update(double dt)
 	for (auto& entity : m_entities)
 	{
 		entity->update(*this);
+	}
+}
+
+void Scene::precalculateBoundingBoxes()
+{
+	for (const auto& entity : getEntities())
+	{
+		// Assume every entity is a GameObject //TODO: (DR) Refactor with ECS
+		Ptr<GameObject> gameObject = std::static_pointer_cast<GameObject>(entity);
+		// TODO: (DR) Bounding box should be precalculated somewhere else
+		// Apply model transform to the mesh AABB and then create a new AABB from transformed points to realign it
+		BoundingBox meshAABB = {gameObject->m_mesh->m_boundingBoxMin, gameObject->m_mesh->m_boundingBoxMax};
+		BoundingBox entityAABB = BoundingBox::createBoundingBox(&meshAABB.getTransformedPoints(gameObject->m_modelMatrix)[0], 8);
+		gameObject->m_aabb = entityAABB;
 	}
 }
 

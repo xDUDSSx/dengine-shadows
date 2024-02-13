@@ -78,14 +78,12 @@ class ShadowMap
 	void drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions, const DisplayOptions& displayOptions);
 
   private:
-//	void buildSceneInDependentCropMatrix(const BoundingBox& box);
+	static glm::mat4 buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm);
 	static glm::mat4 buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm,
 	                                               const std::vector<GameObject*>& casters,
 	                                               const std::vector<Ptr<GameObject>>& receivers);
 
 	void computeTightShadowFrustum(AbstractCamera& camera, Scene& scene);
-
-	static void precalculateBoundingBoxes(Scene& scene);
 
 	static std::vector<Ptr<GameObject>> findShadowReceivers(const BoundingBox& box, Scene& scene);
 	std::vector<GameObject*> findShadowCasters(BoundingBox frustumAABB, int splitIndex, Scene& scene);

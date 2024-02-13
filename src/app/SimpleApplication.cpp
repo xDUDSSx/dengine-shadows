@@ -34,7 +34,7 @@ bool SimpleApplication::onInit()
 	renderOptions.multisample = false;
 	renderOptions.selection = false;
 	renderOptions.shadows = true;
-	renderOptions.shadowType = Dg::RenderOptions::ShadowType::PSSM_INSTANCED;
+	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -45,6 +45,7 @@ bool SimpleApplication::onInit()
 	secondRenderOptions.multisample = false;
 	secondRenderOptions.selection = false;
 	secondRenderOptions.shadows = false;
+	secondRenderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	if (!m_secondRenderTarget)
 	{
 		m_secondRenderTarget = m_scene->createRenderTarget(secondRenderOptions);
@@ -69,6 +70,7 @@ void SimpleApplication::onDisplay()
 
 	Dg::RenderOptions& renderOptions = m_renderTarget->getRenderOptions();
 	m_renderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
+	m_secondRenderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 
 	m_scene->draw(width, height, *m_renderTarget, m_displayOptions);
 
@@ -76,13 +78,13 @@ void SimpleApplication::onDisplay()
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-//	ImGui::Begin("Framebuffers", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-//	GLuint texture = m_renderTarget->getFramebuffer("shadows").lock()->getDepthAttachment()->m_id;
-//	//	GLuint texture = m_renderTarget->getFramebuffer(5).lock()->getDepthAttachment()->m_id;
-//	//	GLuint texture = m_renderTarget->getOutputFramebuffer().lock()->getColorTexture();
-//	// the uv coordinates flips the picture, since it was upside down at first
-//	ImGui::Image((void*) (intptr_t) texture, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
-//	ImGui::End();
+	//	ImGui::Begin("Framebuffers", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	//	GLuint texture = m_renderTarget->getFramebuffer("shadows").lock()->getDepthAttachment()->m_id;
+	//	//	GLuint texture = m_renderTarget->getFramebuffer(5).lock()->getDepthAttachment()->m_id;
+	//	//	GLuint texture = m_renderTarget->getOutputFramebuffer().lock()->getColorTexture();
+	//	// the uv coordinates flips the picture, since it was upside down at first
+	//	ImGui::Image((void*) (intptr_t) texture, ImVec2(512, 512), ImVec2(0, 1), ImVec2(1, 0));
+	//	ImGui::End();
 
 	int sWidth = m_windowSize.x / 2;
 	int sHeight = m_windowSize.y / 2;
@@ -117,7 +119,7 @@ void SimpleApplication::onDisplay()
 	if (ImGui::SliderAngle("Sun spin", &m_scene->m_sunSpin))
 	{
 		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), m_scene->m_sunSpin, glm::vec3(0, 1, 0));
-		m_scene->m_lighting->m_shadowSunLight.pos = glm::vec3(rot * glm::vec4(50, 70, 10, 1.0f));
+		m_scene->m_lighting->m_shadowSunLight.pos = glm::vec3(rot * glm::vec4(90, 300, 60, 1.0f));
 		m_scene->m_lighting->m_shadowSunLight.direction = glm::normalize(-m_scene->m_lighting->m_shadowSunLight.pos);
 		m_scene->m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
 	}
@@ -134,7 +136,6 @@ void SimpleApplication::onDisplay()
 	m_scene->m_orbitCamera->setZNear(m_mainCameraNear);
 	m_scene->m_orbitCamera->setZFar(m_mainCameraFar);
 	ImGui::End();
-
 }
 
 void SimpleApplication::onUpdate(float dt)

@@ -173,10 +173,13 @@ class Scene
 		return m_entities;
 	}
 
+	void precalculateBoundingBoxes();
+
   protected:
 	void sortUnorderedTransparentEntities(glm::mat4 view, std::vector<Entity*>& entities);
 	void sortExplicitlyOrderedTransparentEntities(std::vector<Entity*>& entities);
 
 	void renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection, const std::vector<Entity*>& entities) const;
+	void renderShadowMap(SceneRenderTarget& renderTarget, const DisplayOptions& displayOptions);
 };
 } // namespace Dg

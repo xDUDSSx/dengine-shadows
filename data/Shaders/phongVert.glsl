@@ -10,9 +10,6 @@ uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 normalMatrix;
 
-// Shadow mapping
-uniform mat4 u_lightMatrix;
-
 out vec3 FragPos;
 out vec4 FragPosWorld;
 out vec2 TexCoords;

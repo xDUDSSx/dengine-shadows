@@ -46,3 +46,8 @@ void SceneRenderTarget::addFramebuffer(const std::string& name, const std::share
 	}
 	this->m_framebuffers.insert(std::make_pair(name, framebuffer));
 }
+
+void SceneRenderTarget::removeFramebuffer(const std::string& name)
+{
+	m_framebuffers.erase(name);
+}

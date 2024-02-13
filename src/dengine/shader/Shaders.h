@@ -104,6 +104,10 @@ class Shaders
 		return getShader<T>().get();
 	}
 
+	static bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource);
+	static bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource, const std::string& geoSource,
+	                  const std::string& sourceToInject);
+
   private:
 	template <typename T, typename std::enable_if<std::is_base_of<Shader, T>::value, bool>::type = true>
 	std::shared_ptr<T> loadShader(bool& success, const std::string& vertSource, const std::string& fragSource)
@@ -135,9 +139,6 @@ class Shaders
 		return shader;
 	}
 
-	bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource);
-	bool reloadShader(Shader& shader, const std::string& vertSource, const std::string& fragSource, const std::string& geoSource,
-	                  const std::string& sourceToInject);
 	bool checkForError(Shader& shader);
 };
 

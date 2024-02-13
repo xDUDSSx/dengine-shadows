@@ -60,6 +60,12 @@ void MainScene::init()
 	m_orbitCamera->setZoomSpeed(m_orbitCamera->getZoomSpeed() * m_orbitCamera->getZNear() / 0.2f);
 	m_orbitCamera->setTranslateSpeed(m_orbitCamera->getTranslateSpeed() * m_orbitCamera->getZNear() / 0.2f);
 
+//	m_orbitCamera->setZNear(1.5f);
+//	m_orbitCamera->setZoomSpeed(m_orbitCamera->getZoomSpeed() * m_orbitCamera->getZNear() / 0.2f);
+//	m_orbitCamera->setTranslateSpeed(m_orbitCamera->getTranslateSpeed() * m_orbitCamera->getZNear() / 0.2f);
+	m_orbitCamera2->setZFar(10.0f);
+	m_orbitCamera2->setZFar(3000.0f);
+
 	// Lights
 	Dg::SunLight* sun = new Dg::SunLight();
 	sun->intensity = 0.8f;
@@ -71,7 +77,7 @@ void MainScene::init()
 	m_lighting->m_shadowSunLight.intensity = 0.8f;
 	m_lighting->m_shadowSunLight.color = glm::vec3(0.93, 0.98, 1.0);
 	m_lighting->m_shadowSunLight.direction = glm::vec3(-0.73, -0.64, -0.21);
-	m_lighting->m_shadowSunLight.pos = glm::vec3(50, 70, 10);
+	m_lighting->m_shadowSunLight.pos = glm::vec3(90, 300, 60);
 	m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
 
 	//	Dg::SunLight* sun2 = new Dg::SunLight();
@@ -109,13 +115,17 @@ void MainScene::init()
 	Ptr<Dg::TexturedObject> duck = std::make_shared<Dg::TexturedObject>(duckMesh);
 	duck->m_modelMatrix = glm::translate(duck->m_modelMatrix, glm::vec3(4.f, 2.5f, 1.0f));
 	duck->m_modelMatrix = glm::rotate(duck->m_modelMatrix, glm::radians(34.f), glm::vec3(0.f, 1.f, 0.f));
-	duck->m_highlight = true;
+	duck->m_modelMatrix = glm::scale(duck->m_modelMatrix, glm::vec3(2.0f));
 	addEntity(duck);
 
 	Dg::Mesh* cubeMesh = RMI.mesh("Data/Models/cube.obj");
 	Ptr<Dg::TexturedObject> cube = std::make_shared<Dg::TexturedObject>(cubeMesh);
 	cube->m_modelMatrix = glm::scale(cube->m_modelMatrix, glm::vec3(0.5f));
 	cube->m_modelMatrix = glm::translate(cube->m_modelMatrix, glm::vec3(10.f, 1.0f, 10.0f));
+	for (auto& meshPart : cube->m_mesh->m_meshParts)
+	{
+		meshPart.material.ambient = glm::vec3(0.1f);
+	}
 	addEntity(cube);
 
 	{
@@ -144,6 +154,10 @@ void MainScene::init()
 		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
 		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-40.f, -0.1f, 35.0f));
 		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+		for (auto& meshPart : building->m_mesh->m_meshParts)
+		{
+			meshPart.material.ambient = glm::vec3(0.085f);
+		}
 		addEntity(building);
 	}
 
@@ -156,7 +170,8 @@ void MainScene::init()
 		Dg::Mesh* boxMesh = RMI.mesh("Data/Models/Duck.gltf");
 		Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
 		metalBox->m_modelMatrix = glm::translate(
-		    metalBox->m_modelMatrix, glm::vec3(Math::randomFloat(-5.0f, 5.0f), Math::randomFloat(0.0f, 10.0f), x * 6.f));
+		    metalBox->m_modelMatrix, glm::vec3(Math::randomFloat(-5.0f, 5.0f), Math::randomFloat(0.0f, 30.0f), x * 6.f));
+		metalBox->m_modelMatrix = glm::scale(metalBox->m_modelMatrix, glm::vec3(2.0f));
 		addEntity(metalBox);
 	}
 
@@ -178,6 +193,9 @@ void MainScene::init()
 	//* 6.0f)); 			addEntity(metalBox);
 	//		}
 	//	}
+
+	// DONT FORGET THIS !!!!!!!!!!!!!!!!!!!!!
+	precalculateBoundingBoxes(); // TODO: Objects should handle their boxes on their own, this is a temporary workaround
 }
 
 void MainScene::draw(int width, int height, Dg::SceneRenderTarget& renderTarget, const Dg::DisplayOptions& displayOptions)

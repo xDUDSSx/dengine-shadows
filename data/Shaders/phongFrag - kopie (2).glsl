@@ -105,11 +105,7 @@ uniform int spotLightsCount;
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 // Shadow mapping
-#ifdef PSSM
-uniform sampler2DArray u_shadowMap;
-#else
 uniform sampler2D u_shadowMap;
-#endif
 
 struct ShadowSunLight {
 	vec3 direction;
@@ -118,13 +114,7 @@ struct ShadowSunLight {
 	vec3 color;
 	vec3 specular;
 
-#ifdef PSSM
-#define PSSM_CASCADES 4
-	mat4 lightPvms[PSSM_CASCADES];
-	float splitPlanes[PSSM_CASCADES];
-#else
-	mat4 lightPvm;
-#endif
+//	mat4 lightPvm;
 };
 uniform ShadowSunLight u_shadowSunLight;
 
@@ -168,16 +158,14 @@ float calculateShadowFactor(mat4 lightPvm, int splitIndex, vec3 normal, vec3 lig
 //	// get vector between fragment position and light position
 //	vec3 fragToLight = fragPos - lightPos;
 
-	vec4 lightSpaceFragPos = lightPvm * FragPosWorld;
+	vec4 lightSpaceFragPos = u_testMatrix * FragPosWorld;
 	vec3 lightNDCSpaceFragPos = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
 	lightNDCSpaceFragPos = lightNDCSpaceFragPos * 0.5 + 0.5;
 
 	float fragDepth = lightNDCSpaceFragPos.z;
-#ifdef PSSM
-	float shadowDepth = texture(u_shadowMap, vec3(lightNDCSpaceFragPos.xy, splitIndex)).r;
-#else
 	float shadowDepth = texture(u_shadowMap, lightNDCSpaceFragPos.xy).r;
-#endif
+
+	return shadowDepth;
 
 	float bias = max(0.005 * (1.0 - dot(normal, lightDir)), 0.0005);
 //	float bias = 0.001;
@@ -296,7 +284,7 @@ vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragP
 	vec3 R = reflect(-L, N);
 	vec3 V = normalize(-fragPos);
 
-	vec3 ambientLight = calculateAmbientLight(light.color, material.ambient);
+	vec3 ambientLight = calculateAmbientLight(light.color, material.ambient); // Overrding ambient here
 	vec3 diffuseLight = calculateDiffuseLight(light.color, material.diffuse, N, L);
 	vec3 specularLight = calculateSpecularLight(light.color, material.specular, L, V, N, R, material.shininess);
 	specularLight *= light.specular;
@@ -304,21 +292,9 @@ vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragP
 	// Shadow mapping
 	int index = 0;
 	float shadow = 0.0;
-#ifdef PSSM
-	float fragDistance = -FragPos.z;
-	for (int i = 0; i < PSSM_CASCADES; i++)
-	{
-		if (fragDistance < light.splitPlanes[i])
-		{
-			index = i;
-			shadow = calculateShadowFactor(light.lightPvms[i], i, N, L);
-			break;
-		}
-	}
-	//	return vec3(map(index, 0., PSSM_CASCADES, 0., 1.)); // For visualization TODO
-#else
+
 	shadow = calculateShadowFactor(u_testMatrix, 0, N, L);
-#endif
+
 	if (u_visualizeShadowMap)
 		return ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)) * splitColors[index];
 	else

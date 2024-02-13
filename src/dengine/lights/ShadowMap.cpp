@@ -80,49 +80,60 @@ Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType)
 
 void ShadowMap::update(ShadowType shadowType, Scene& scene, AbstractCamera& camera)
 {
-	if (m_shadowType != shadowType)
-	{
-		bool wasUsingPSSM = m_shadowType == ShadowType::REGULAR;
-		bool wantsToUsePSSM = shadowType != ShadowType::REGULAR;
-		if (wasUsingPSSM && !wantsToUsePSSM)
-		{
-		}
-		else if (!wasUsingPSSM && wantsToUsePSSM)
-		{
-		}
-	}
-	m_shadowType = shadowType;
+	// TODO: Refactoring, some functions work with member state which is a mess
 
-	// TODO: Refactoring, functions work with member state which is a mess
-	precalculateBoundingBoxes(scene);
+	// Assuming all GameObjects have up to date aabb bounding boxes!
+
+	// Adjust camera planes and create tightShadowFrustum
 	computeTightShadowFrustum(camera, scene);
 
-	m_splitPositions.clear();
-	m_splitPositions.resize(m_splitCount + 1);
-	calculateSplitPositions(m_splitPositions, m_splitCount, m_splitSchemeWeight, m_zNearTight, m_zFarTight);
-
-	m_casters.clear();
-	m_splitFrustums.clear();
-	m_splitFrustumsAABBs.clear();
-	m_lightPvmMatrices.clear();
-	m_lightPvmMatrices.resize(m_splitCount);
-	m_cropMatrices.clear();
-	m_cropMatrices.resize(m_splitCount);
-
-	for (int i = 0; i < m_splitCount; i++)
+	if (m_shadowType == Dg::RenderOptions::ShadowType::REGULAR)
 	{
-		Frustum splitFrustum = createSplitFrustum(m_splitPositions[i], m_splitPositions[i + 1], camera);
-		m_splitFrustums.push_back(splitFrustum);
-		BoundingBox splitFrustumAABB = splitFrustum.createAABB();
-		m_splitFrustumsAABBs.push_back(splitFrustumAABB);
-		std::vector<GameObject*> localCasters = findShadowCasters(splitFrustumAABB, i, scene);
-		if (i == 0)
-			m_debugCasters = localCasters;
+		// A single shadow map that covers the tight camera frustum
+		m_lightPvmMatrices.clear();
+		m_cropMatrices.clear();
+
+		m_casters.clear();
+
+		// Find casters too, so we only render those, in order to compare this method reasonably to PSSM
+		std::vector<GameObject*> localCasters = findShadowCasters(m_tightCameraFrustumAABB, 0, scene);
 		m_casters.insert(localCasters.begin(), localCasters.end());
+
 		glm::mat4 lightPvm = m_lightProjection * m_lightView;
-		glm::mat4 cropMatrix = buildSceneDependentCropMatrix(splitFrustumAABB, lightPvm, localCasters, m_receivers);
-		m_cropMatrices[i] = cropMatrix;
-		m_lightPvmMatrices[i] = cropMatrix * lightPvm;
+		glm::mat4 cropMatrix = buildSceneInDependentCropMatrix(m_tightCameraFrustumAABB, lightPvm);
+		m_cropMatrices.push_back(cropMatrix);
+		m_lightPvmMatrices.push_back(cropMatrix * lightPvm);
+	}
+	else
+	{
+		// PSSM
+		m_splitPositions.clear();
+		m_splitPositions.resize(m_splitCount + 1);
+		calculateSplitPositions(m_splitPositions, m_splitCount, m_splitSchemeWeight, m_zNearTight, m_zFarTight);
+
+		m_casters.clear();
+		m_splitFrustums.clear();
+		m_splitFrustumsAABBs.clear();
+		m_lightPvmMatrices.clear();
+		m_lightPvmMatrices.resize(m_splitCount);
+		m_cropMatrices.clear();
+		m_cropMatrices.resize(m_splitCount);
+
+		for (int i = 0; i < m_splitCount; i++)
+		{
+			Frustum splitFrustum = createSplitFrustum(m_splitPositions[i], m_splitPositions[i + 1], camera);
+			m_splitFrustums.push_back(splitFrustum);
+			BoundingBox splitFrustumAABB = splitFrustum.createAABB();
+			m_splitFrustumsAABBs.push_back(splitFrustumAABB);
+			std::vector<GameObject*> localCasters = findShadowCasters(splitFrustumAABB, i, scene);
+			if (i == 0)
+				m_debugCasters = localCasters;
+			m_casters.insert(localCasters.begin(), localCasters.end());
+			glm::mat4 lightPvm = m_lightProjection * m_lightView;
+			glm::mat4 cropMatrix = buildSceneDependentCropMatrix(splitFrustumAABB, lightPvm, localCasters, m_receivers);
+			m_cropMatrices[i] = cropMatrix;
+			m_lightPvmMatrices[i] = cropMatrix * lightPvm;
+		}
 	}
 }
 
@@ -142,17 +153,15 @@ BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projectio
 	return ndcBox;
 }
 
-// void ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB)
-//{
-//	glm::mat4 lightPvm = m_lightProjection * m_lightView;
-//
-//	BoundingBox ndcBox = projectBoxIntoNDC(frustumAABB, lightPvm);
-//	// Near plane is at 1.0f, far plane at -1.0f, again, flipped z-coords for reasons
-//	ndcBox.m_max.z = 1.0f; // Do not modify the near plane eg. "Extend" bounding box towards the original near plane
-//
-//	m_cropMatrix = glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
-//	m_croppedLightProjection = m_cropMatrix * m_lightProjection;
-// }
+glm::mat4 ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm)
+{
+	// Simply build a light space bounding box around the frustum and push its near end to the near plane to capture all casters
+	BoundingBox ndcBox = projectBoxIntoNDC(frustumAABB, lightPvm);
+	// Near plane is at 1.0f, far plane at -1.0f, again, flipped z-coords for reasons
+	ndcBox.m_max.z = 1.0f; // Do not modify the near plane eg. "Extend" bounding box towards the original near plane
+
+	return glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
+}
 
 glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm,
                                                    const std::vector<GameObject*>& casters,
@@ -160,8 +169,7 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 {
 	BoundingBox ndcObjectsAABB;
 
-	// TODO: Seemingly wrapping just the casters does the trick
-	//  THIS MAY BECAUSE WE'RE ONLY SAMPLING ONE CASCADE SO FAR
+	// TODO: Seemingly wrapping just the casters does the trick. This was mentioned in the paper.
 	// Project each receiver and caster bounding box
 	//	for (const auto& object : receivers)
 	//	{
@@ -184,15 +192,15 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
 	//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
 	//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
-//	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
-//	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
+	//	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
+	//	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
 	// TODO: Fix the Z bounds = near -> <= 1.0, far >= receiver.bb.min.z
 	ndcBox.m_min.z = std::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
 	ndcBox.m_max.z = std::min(ndcObjectsAABB.m_max.z, 1.0f);
 
 	//	ndcBox.m_max.z = 1.0f;
 
-//	BoundingBox ndcBox = ndcObjectsAABB;
+	//	BoundingBox ndcBox = ndcObjectsAABB;
 
 	//	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
 	//	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
@@ -223,20 +231,6 @@ void ShadowMap::computeTightShadowFrustum(AbstractCamera& camera, Scene& scene)
 		                                                                   m_zNearTight, m_zFarTight, true);
 		m_tightCameraFrustum = GfxUtils::unprojectMatrix(tightProjection * camera.getView());
 		m_tightCameraFrustumAABB = m_tightCameraFrustum.createAABB();
-	}
-}
-
-void ShadowMap::precalculateBoundingBoxes(Scene& scene)
-{
-	for (const auto& entity : scene.getEntities())
-	{
-		// Assume every entity is a GameObject //TODO: (DR) Refactor with ECS
-		Ptr<GameObject> gameObject = std::static_pointer_cast<GameObject>(entity);
-		// TODO: (DR) Bounding box should be precalculated somewhere else
-		// Apply model transform to the mesh AABB and then create a new AABB from transformed points to realign it
-		BoundingBox meshAABB = {gameObject->m_mesh->m_boundingBoxMin, gameObject->m_mesh->m_boundingBoxMax};
-		BoundingBox entityAABB = BoundingBox::createBoundingBox(&meshAABB.getTransformedPoints(gameObject->m_modelMatrix)[0], 8);
-		gameObject->m_aabb = entityAABB;
 	}
 }
 
@@ -337,6 +331,17 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 
 		PSSMShader* pssmShader = Shaders::instance().getShaderPtr<PSSMShader>();
 		PSSMInstancingShader* pssmInstancingShader = Shaders::instance().getShaderPtr<PSSMInstancingShader>();
+
+		switch (renderOptions.shadowType)
+		{
+			case RenderOptions::ShadowType::PSSM_GEO:
+				pssmShader->cropMatrices = m_cropMatrices;
+				break;
+			case RenderOptions::ShadowType::PSSM_INSTANCED:
+				pssmInstancingShader->cropMatrices = m_cropMatrices;
+				break;
+		}
+
 		for (auto& shadowCaster : m_casters)
 		{
 			shadowCaster->m_wboit = false; // Not using wboit
@@ -346,13 +351,10 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 				continue;
 
 			Renderer::RenderContext context;
-			// context.m_renderType = Renderer::RenderType::DEPTH;
-			context.m_renderType = Renderer::RenderType::CUSTOM;
-
 			switch (renderOptions.shadowType)
 			{
 				case RenderOptions::ShadowType::PSSM_GEO:
-					pssmShader->cropMatrices = m_cropMatrices;
+					context.m_renderType = Renderer::RenderType::CUSTOM;
 					pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
 					pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
 					//				shadowShader->m_lightPos = lightPos;
@@ -362,7 +364,7 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 					context.m_shader = pssmShader;
 					break;
 				case RenderOptions::ShadowType::PSSM_INSTANCED:
-					pssmInstancingShader->cropMatrices = m_cropMatrices;
+					context.m_renderType = Renderer::RenderType::CUSTOM;
 					pssmInstancingShader->splitBegin = shadowCaster->m_shadowSplitBegin;
 					pssmInstancingShader->splitEnd = shadowCaster->m_shadowSplitEnd;
 
@@ -371,6 +373,8 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 					context.m_shader = pssmInstancingShader;
 					break;
 				case RenderOptions::ShadowType::REGULAR:
+					context.m_instanceCount = 0;
+					context.m_renderType = Renderer::RenderType::DEPTH;
 					// TODO: Implement simple shadow maps again
 					break;
 			}
@@ -378,8 +382,17 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 			shadowCaster->prepareRenderContext(context);
 			if (!shadowCaster->m_shadowCullFront)
 				glDisable(GL_CULL_FACE);
-			Renderer::render(shadowCaster, m_lightView, m_lightProjection, context);
-			//			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
+			if (renderOptions.shadowType != RenderOptions::ShadowType::REGULAR)
+			{
+				// Vertices get the appropriate crop matrix applied in the vertex or geometry shader
+				Renderer::render(shadowCaster, m_lightView, m_lightProjection, context);
+			}
+			else
+			{
+				// For regular shadow mapping we're cropping only once and so we can pass cropped projection directly
+				Renderer::render(shadowCaster, m_lightView, m_cropMatrices[0] * m_lightProjection, context);
+			}
+
 			if (!shadowCaster->m_shadowCullFront)
 				glEnable(GL_CULL_FACE);
 

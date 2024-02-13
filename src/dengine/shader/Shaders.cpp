@@ -25,6 +25,7 @@ bool Shaders::load()
 	bool ok = true;
 
 	ok &= createShader<PhongShader>("Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl", "", "#define PSSM");
+//	ok &= createShader<PhongShader>("Data/Shaders/phongVert.glsl", "Data/Shaders/phongFrag.glsl", "");
 	ok &= createShader<ColorShader>("Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
 	ok &= createShader<DepthShader>("Data/Shaders/depthVert.glsl", "");
 	ok &= createShader<PSSMShader>("Data/Shaders/depthVert.glsl", "", "Data/Shaders/pssmGeo.glsl");

@@ -50,7 +50,11 @@ public:
 	glm::vec3 m_lightPos{1.0f};
 	glm::mat4 m_lightView{1.0f};
 
+	GLint m_testMatrixLoc;
+	glm::mat4 m_testMatrix{2.0f};
+
 	bool m_visualizeShadowMap = true;
+	bool m_isUsingPSSM = true;
 
 	explicit PhongShader(GLuint id);
 
