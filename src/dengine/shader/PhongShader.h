@@ -38,6 +38,8 @@ protected:
 	GLint m_lightMatrixLoc;  // TODO: Remove
 	GLint m_lightViewLoc;  // TODO: Remove
 
+	GLint m_visualizeShadowMapLoc;
+
 	// TODO: (DR) Location IDs should probably be stored in some kind of map with string keys ideally
 
 public:
@@ -47,6 +49,8 @@ public:
 //	glm::mat4 m_lightMatrix{1.0f}; // TODO: (DR) Move to a light UBO
 	glm::vec3 m_lightPos{1.0f};
 	glm::mat4 m_lightView{1.0f};
+
+	bool m_visualizeShadowMap = true;
 
 	explicit PhongShader(GLuint id);
 

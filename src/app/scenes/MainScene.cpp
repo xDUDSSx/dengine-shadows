@@ -20,55 +20,33 @@ MainScene::MainScene() : Scene()
 	m_orbitCamera2 = std::make_shared<Dg::OrbitCamera>();
 }
 
-struct Transform : public DgTest::Component
+void randomGenerateScifiBlocks(Dg::Scene& scene, glm::vec3 origin)
 {
-  public:
-	~Transform()
+	int range = 10;
+	int minRangeX = 2;
+	int minRangeZ = 4;
+	for (int x = -range; x < range; x++)
 	{
-		int x = 3;
-		LOG_INFO("Transform DESTROY");
+		for (int y = -range; y < range; y++)
+		{
+			if (abs(x) < minRangeX && abs(y) < minRangeZ)
+				continue;
+			if (Math::randomFloat(0.f, 1.f) > 0.1f)
+				continue;
+//			Dg::Mesh* buildingMesh =
+//			    RMI.mesh(std::string("Data/Models/scifiblock") + std::to_string(Math::randomInt(1, 3)) + ".gltf");
+			Dg::Mesh* buildingMesh = RMI.mesh(std::string("Data/Models/House.glb"));
+			Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+			building->m_modelMatrix = glm::translate(building->m_modelMatrix, origin + glm::vec3(x * 20.f, 0.05f, y * 20.0f));
+			building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(10.0f));
+			building->m_modelMatrix =
+			    glm::rotate(building->m_modelMatrix, glm::radians(Math::randomFloat(0.f, 180.f)), glm::vec3(0, 1, 0));
+
+			//			building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+			//			building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -40.0f));
+			scene.addEntity(building);
+		}
 	}
-	Transform(Transform&& other)
-	{
-		// Move constr
-		this->x = other.x;
-		this->y = other.y;
-		this->z = other.z;
-		LOG_INFO("Transform MOVE");
-	}
-	Transform(Transform& other)
-	{
-		// Copy constr
-		this->x = other.x;
-		this->y = other.y;
-		this->z = other.z;
-		LOG_INFO("Transform COPY");
-	}
-
-	float x{0.f}, y{0.f}, z{0.f};
-	Transform() = default;
-	Transform(float x, float y, float z) : x(x), y(y), z(z) {}
-};
-
-void ecsTest()
-{
-	// ECS test
-	DgTest::Entity entity;
-	entity.registerComponent<Transform>();
-
-	Transform test{1.2f, 3.1f, 11.3f};
-	//	entity.addComponent(Transform());
-	entity.addComponent(std::move(test));
-	// entity.createComponent<Transform>(1.0f, 2.4f, 3.1f);
-
-	Transform& t = entity.getComponent<Transform>();
-	t.x = 99.4f;
-
-	LOG_INFO("Transform: {}, {}, {}", t.x, t.y, t.z);
-
-	Transform& t2 = entity.getComponent<Transform>();
-
-	LOG_INFO("Transform: {}, {}, {}", t2.x, t2.y, t2.z);
 }
 
 void MainScene::init()
@@ -77,8 +55,8 @@ void MainScene::init()
 
 	m_orbitCamera->setFov(90.f);
 	m_orbitCamera->setRotationX(60);
-	m_orbitCamera->setZFar(160.0f);
-	m_orbitCamera->setZNear(1.1f);
+	m_orbitCamera->setZFar(360.0f);
+	m_orbitCamera->setZNear(1.5f);
 	m_orbitCamera->setZoomSpeed(m_orbitCamera->getZoomSpeed() * m_orbitCamera->getZNear() / 0.2f);
 	m_orbitCamera->setTranslateSpeed(m_orbitCamera->getTranslateSpeed() * m_orbitCamera->getZNear() / 0.2f);
 
@@ -93,7 +71,7 @@ void MainScene::init()
 	m_lighting->m_shadowSunLight.intensity = 0.8f;
 	m_lighting->m_shadowSunLight.color = glm::vec3(0.93, 0.98, 1.0);
 	m_lighting->m_shadowSunLight.direction = glm::vec3(-0.73, -0.64, -0.21);
-	m_lighting->m_shadowSunLight.pos = glm::vec3(35, 30, 10);
+	m_lighting->m_shadowSunLight.pos = glm::vec3(50, 70, 10);
 	m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
 
 	//	Dg::SunLight* sun2 = new Dg::SunLight();
@@ -107,7 +85,7 @@ void MainScene::init()
 	Dg::Mesh* planeMesh = RMI.mesh("Data/Models/plane.gltf");
 	Ptr<Dg::TexturedObject> plane =
 	    std::make_shared<Dg::TexturedObject>(planeMesh, Dg::Shaders::instance().getShaderPtr<Dg::PhongShader>());
-	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(80.f, 1.0f, 80.f));
+	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(200.f, 1.0f, 200.f));
 	plane->m_modelMatrix = glm::rotate(plane->m_modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
 	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(50.f));
 	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(15.f));
@@ -140,11 +118,34 @@ void MainScene::init()
 	cube->m_modelMatrix = glm::translate(cube->m_modelMatrix, glm::vec3(10.f, 1.0f, 10.0f));
 	addEntity(cube);
 
-	Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/building1.obj");
-	Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
-	building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
-	building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -40.0f));
-	addEntity(building);
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingBase.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -40.0f));
+		addEntity(building);
+	}
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingSmall.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -40.0f));
+		addEntity(building);
+	}
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingLarge.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -40.0f));
+		addEntity(building);
+	}
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/hut.obj");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-40.f, -0.1f, 35.0f));
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+		addEntity(building);
+	}
 
 	int range = 10;
 	int minRange = 2;
@@ -159,6 +160,8 @@ void MainScene::init()
 		addEntity(metalBox);
 	}
 
+	randomGenerateScifiBlocks(*this, glm::vec3(0, 0, 0));
+
 	//	int range = 10;
 	//	int minRange = 2;
 	//	for (int x = -range; x < range; x++)
@@ -169,14 +172,12 @@ void MainScene::init()
 	//				continue;
 	//			Dg::Mesh* boxMesh = RMI.mesh("Data/Models/box_metal.gltf");
 	//			Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
-	//			metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(x * 6.f, Math::randomFloat(0.0f, 10.0f),
-	//y
+	//			metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(x * 6.f,
+	// Math::randomFloat(0.0f, 10.0f),
+	// y
 	//* 6.0f)); 			addEntity(metalBox);
 	//		}
 	//	}
-
-	// Ecs test
-	ecsTest();
 }
 
 void MainScene::draw(int width, int height, Dg::SceneRenderTarget& renderTarget, const Dg::DisplayOptions& displayOptions)

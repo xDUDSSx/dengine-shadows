@@ -14,8 +14,6 @@
 #include "dengine/shader/SelectionCompositeShader.h"
 #include "dengine/shader/WBOITCompositeShader.h"
 #include "dengine/shader/DepthShader.h"
-#include "dengine/shader/PSSMShader.h"
-#include "dengine/shader/PSSMInstancingShader.h"
 #include "dengine/renderer/Renderer.h"
 
 #include "SceneRenderTarget.h"
@@ -41,10 +39,17 @@ void Scene::draw(int width, int height, SceneRenderTarget& renderTarget, const D
 	m_camera->size(width, height);
 	m_camera->update();
 
+	const RenderOptions& renderOptions = renderTarget.getRenderOptions();
+
 	// Adjust camera planes and create tightShadowFrustum
-	if (renderTarget.getRenderOptions().shadows)
+	if (renderOptions.shadows)
 	{
-		m_lighting->m_shadowSunLight.m_shadowMap->update(*this, *m_camera);
+		Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
+		// Update shadow maps
+		shadowMap->m_splitSchemeWeight = renderOptions.pssmShadowsSplitSchemeWeight;
+		shadowMap->update(renderOptions.shadowType, *this, *m_camera);
+		// Draw shadow maps
+		shadowMap->drawShadowBuffer(renderTarget.getFramebuffer("shadows"), renderOptions, displayOptions);
 	}
 
 	return draw(width, height, m_camera->getView(), m_camera->getProjection(), renderTarget, displayOptions);
@@ -75,6 +80,11 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		selectionBlurFBO = renderTarget.getFramebuffer("selectionBlurFirstPass").lock();
 		selectionBlurSecondPassFBO = renderTarget.getFramebuffer("selectionBlurSecondPass").lock();
 	}
+	Ptr<Framebuffer> shadowFBO;
+	if (renderOptions.shadows)
+	{
+		shadowFBO = renderTarget.getFramebuffer("shadows").lock();
+	}
 
 	mainFBO->setMultisampled(multisample, samples);
 	if (renderOptions.wboit)
@@ -86,16 +96,8 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		selectionFBO->setMultisampled(multisample, samples);
 	}
 
-	// Draw shadow maps
-	glm::mat4 lightMatrix{1.0f};
-	glm::vec3 lightPos{1.0f};
-
-	Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
-	if (renderOptions.shadows)
-	{
-		shadowMap->m_shadowFBO = renderTarget.getFramebuffer("shadows");
-		drawShadowBuffer(*shadowMap, renderOptions, displayOptions);
-	}
+	//	glm::mat4 lightMatrix{1.0f}; // TODO: Remove
+	//	glm::vec3 lightPos{1.0f};
 
 	// Draw the scene
 	if (renderOptions.wboit)
@@ -248,6 +250,8 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 		glStencilMask(0xFF);
 
+		//		Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
+
 		mainFBO->start(width, height);
 		{
 			glClearColor(clearColor.r, clearColor.g, clearColor.b, alpha ? 0.0f : 1.0f);
@@ -256,14 +260,18 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			// Setup phong shader, later, shaders are switched for each object
 			PhongShader* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
-			// TODO: (DR) Turn texture bindings into a generic Shader method
-			phongShader->m_shadowMapId = shadowMap->m_shadowFBO.lock()->getDepthAttachment()->m_id;
-			//			phongShader->m_lightMatrix = lightMatrix;
-			//			phongShader->m_lightPos = lightPos;
-			//			phongShader->m_lightView = lightMatrix;
+			// Assign the rendered shadow map texture to phong shader
+			phongShader->m_visualizeShadowMap = displayOptions.showDebugVisualizeShadowMap;
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
-			m_lighting->m_shadowSunLight.setUniforms(*phongShader, 0);
+			if (renderOptions.shadows)
+			{
+				phongShader->m_shadowMapId = shadowFBO->getDepthAttachment()->m_id;
+				//			phongShader->m_lightMatrix = lightMatrix;
+				//			phongShader->m_lightPos = lightPos;
+				//			phongShader->m_lightView = lightMatrix;
+				m_lighting->m_shadowSunLight.setUniforms(*phongShader, 0);
+			}
 
 			m_unorderedTransparentEntities.clear();
 			m_explicitTransparencyOrderEntitiesFirst.clear();
@@ -334,6 +342,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 
 		if (displayOptions.showDebug)
 		{
+			Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
 			DebugDraw::drawFrustum(shadowMap->m_lightProjection * shadowMap->m_lightView, Color::YELLOW, view, projection);
 			DebugDraw::drawFrustum(shadowMap->m_croppedLightProjection * shadowMap->m_lightView, Color::TEAL, view, projection);
 
@@ -342,17 +351,26 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
 
 			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, Color::BROWN, view, projection);
-			DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
+			if (displayOptions.showDebugFrustumAABBs)
+				DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
 			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
-			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
+			if (displayOptions.showDebugFrustumAABBs)
+				DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
 
 			glm::vec3 colors[] = {Color::GREEN, Color::YELLOW, Color::RED, Color::BLUE};
 			for (int i = 0; i < PSSM_CASCADES; i++)
 			{
-				DebugDraw::drawLineBox(shadowMap->m_splitFrustums[i].m_corners, colors[i], view, projection);
-				glm::mat4 croppedLightProjection =
-				    shadowMap->m_cropMatrices[i] * shadowMap->m_lightProjection * shadowMap->m_lightView;
-				DebugDraw::drawFrustum(croppedLightProjection, colors[i] - glm::vec3(0.2f), view, projection);
+				if (displayOptions.showDebugFrustums)
+					DebugDraw::drawLineBox(shadowMap->m_splitFrustums[i].m_corners, colors[i] - glm::vec3(0.18f), view,
+					                       projection);
+				if (displayOptions.showDebugFrustumAABBs)
+					DebugDraw::drawLineBox(shadowMap->m_splitFrustumsAABBs[i], colors[i] - glm::vec3(0.30f), view, projection);
+				if (displayOptions.showDebugShadowMapVolumes)
+				{
+					glm::mat4 croppedLightProjection =
+					    shadowMap->m_cropMatrices[i] * shadowMap->m_lightProjection * shadowMap->m_lightView;
+					DebugDraw::drawFrustum(croppedLightProjection, colors[i], view, projection);
+				}
 			}
 
 			//		glm::vec4 testVec = glm::vec4(0.f, 0.f, 0.f, 1.0f);
@@ -645,27 +663,8 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 
 	if (options.shadows)
 	{
-		//		auto d = DepthAttachment(false, 100, 100, false);
-		//		d.m_minFilter = GL_NEAREST;
-		//		d.m_magFilter = GL_NEAREST;
-		//		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
-		//		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
-		//		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-		//		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(1024, 1024);
-		//		shadowFbo->setDepthAttachment(d);
-		//		renderTarget->addFramebuffer("shadows", shadowFbo);
-
-		auto d = DepthAttachment(false, 100, 100, false);
-		d.m_use2DTextureArray = true;
-		d.m_2DTextureArrayLayers = PSSM_CASCADES;
-		d.m_minFilter = GL_NEAREST;
-		d.m_magFilter = GL_NEAREST;
-		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
-		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
-		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-		Ptr<Framebuffer> shadowFbo = std::make_shared<Framebuffer>(256, 256);
-		shadowFbo->setDepthAttachment(d);
-		renderTarget->addFramebuffer("shadows", shadowFbo);
+		Ptr<Framebuffer> shadowFBO = m_lighting->m_shadowSunLight.m_shadowMap->createShadowFramebuffer(options.shadowType);
+		renderTarget->addFramebuffer("shadows", shadowFBO);
 	}
 
 	return renderTarget;
@@ -798,92 +797,6 @@ void Scene::triggerSelectionCallbacks(Entity* entity)
 	{
 		callback(entity);
 	}
-}
-
-void Scene::drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOptions, const DisplayOptions& displayOptions)
-{
-	// TODO: Shadow rendering should probably be handled per light
-	//   Either perform shadow rendering within Light objects? (that doesn't sound right, not really a light's responsibility)
-	//   Or create some separate system ShadowManager, that will keep track of lights and their shadow buffers separately
-	//   (preferrable)
-	// Shadows phase 1
-	// TODO: Render the scene from POV of the light
-	// TODO: This method is huge, it should be split up into smaller ones
-
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glDepthMask(GL_TRUE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-	glStencilMask(0xFF);
-
-	// Render shadow casters into shadow map
-	Ptr<Framebuffer> shadowFBO = shadowMap.m_shadowFBO.lock();
-	shadowFBO->start();
-	{
-		glClear(GL_DEPTH_BUFFER_BIT);
-
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT); // Cull front faces to try help with shadow artefacts
-
-		PSSMShader* pssmShader = Shaders::instance().getShaderPtr<PSSMShader>();
-		PSSMInstancingShader* pssmInstancingShader = Shaders::instance().getShaderPtr<PSSMInstancingShader>();
-		for (auto& shadowCaster : shadowMap.m_casters)
-		{
-			shadowCaster->m_wboit = false; // Not using wboit
-			if (!shadowCaster->m_visible)
-				continue;
-			if (!displayOptions.shouldDraw(*shadowCaster))
-				continue;
-
-			Renderer::RenderContext context;
-			// context.m_renderType = Renderer::RenderType::DEPTH;
-			context.m_renderType = Renderer::RenderType::CUSTOM;
-
-			switch (renderOptions.shadowType)
-			{
-				case RenderOptions::ShadowType::PSSM_GEO:
-					pssmShader->cropMatrices = shadowMap.m_cropMatrices;
-					pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
-					pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
-					//				shadowShader->m_lightPos = lightPos;
-					//				shadowShader->m_zFar = far_plane;
-					//				shadowShader->getSunPositionFromViewMatrix(view);
-					context.m_instanceCount = 0;
-					context.m_shader = pssmShader;
-					break;
-				case RenderOptions::ShadowType::PSSM_INSTANCED:
-					pssmInstancingShader->cropMatrices = shadowMap.m_cropMatrices;
-					pssmInstancingShader->splitBegin = shadowCaster->m_shadowSplitBegin;
-					pssmInstancingShader->splitEnd = shadowCaster->m_shadowSplitEnd;
-
-					// Render as many instances as the number of cascades the shadow caster is part of
-					context.m_instanceCount = shadowCaster->m_shadowSplitEnd - shadowCaster->m_shadowSplitBegin + 1;
-					context.m_shader = pssmInstancingShader;
-					break;
-				case RenderOptions::ShadowType::REGULAR:
-					// TODO: Implement simple shadow maps again
-					break;
-			}
-
-			shadowCaster->prepareRenderContext(context);
-			if (!shadowCaster->m_shadowCullFront)
-				glDisable(GL_CULL_FACE);
-			Renderer::render(shadowCaster, shadowMap.m_lightView, shadowMap.m_lightProjection, context);
-//			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
-			if (!shadowCaster->m_shadowCullFront)
-				glEnable(GL_CULL_FACE);
-
-			// Reset split indicators for next frame
-			shadowCaster->m_shadowSplitBegin = INT_MAX;
-			shadowCaster->m_shadowSplitEnd = INT_MIN;
-		}
-		glDisable(GL_CULL_FACE);
-	}
-	shadowFBO->end();
-	// Shadows phase 2
 }
 
 } // namespace Dg

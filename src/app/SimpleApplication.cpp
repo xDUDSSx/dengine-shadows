@@ -67,6 +67,7 @@ void SimpleApplication::onDisplay()
 	int width = m_windowSize.x;
 	int height = m_windowSize.y;
 
+	Dg::RenderOptions& renderOptions = m_renderTarget->getRenderOptions();
 	m_renderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 
 	m_scene->draw(width, height, *m_renderTarget, m_displayOptions);
@@ -86,7 +87,7 @@ void SimpleApplication::onDisplay()
 	int sWidth = m_windowSize.x / 2;
 	int sHeight = m_windowSize.y / 2;
 
-	ImGui::SetNextWindowSizeConstraints(ImVec2(100, 20), ImVec2(FLT_MAX, FLT_MAX));
+	ImGui::SetNextWindowSizeConstraints(ImVec2(250, 20), ImVec2(FLT_MAX, FLT_MAX));
 	ImGui::Begin("Secondary view", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	if (!ImGui::IsWindowCollapsed())
 	{
@@ -97,6 +98,11 @@ void SimpleApplication::onDisplay()
 		GLuint texture2 = m_secondRenderTarget->getOutputFramebuffer().lock()->getColorTexture();
 		ImGui::Image((void*) (intptr_t) texture2, ImVec2(sWidth, sHeight), ImVec2(0, 1), ImVec2(1, 0));
 		m_secondaryWindowHovered = ImGui::IsWindowHovered();
+		ImGui::Checkbox("Show frustums", &m_secondDisplayOptions.showDebugFrustums);
+		ImGui::SameLine();
+		ImGui::Checkbox("Show frustum AABBs", &m_secondDisplayOptions.showDebugFrustumAABBs);
+		ImGui::SameLine();
+		ImGui::Checkbox("Show shadow volumes", &m_secondDisplayOptions.showDebugShadowMapVolumes);
 	}
 	else
 	{
@@ -111,12 +117,22 @@ void SimpleApplication::onDisplay()
 	if (ImGui::SliderAngle("Sun spin", &m_scene->m_sunSpin))
 	{
 		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), m_scene->m_sunSpin, glm::vec3(0, 1, 0));
-		m_scene->m_lighting->m_shadowSunLight.pos = glm::vec3(rot * glm::vec4(35, 30, 10, 1.0f));
+		m_scene->m_lighting->m_shadowSunLight.pos = glm::vec3(rot * glm::vec4(50, 70, 10, 1.0f));
 		m_scene->m_lighting->m_shadowSunLight.direction = glm::normalize(-m_scene->m_lighting->m_shadowSunLight.pos);
 		m_scene->m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
 	}
 	const char* items[] = {"Regular", "PSSM Geometry shader", "PSSM Instancing"};
 	ImGui::Combo("Shadow type", &m_shadowType, items, 3, 4);
+	ImGui::SliderFloat("Split scheme weight", &renderOptions.pssmShadowsSplitSchemeWeight, 0.0f, 1.0f);
+	ImGui::Checkbox("Visualize shadow map", &m_displayOptions.showDebugVisualizeShadowMap);
+	if (ImGui::Checkbox("Limit FPS", &m_limitFps))
+	{
+		glfwSwapInterval(m_limitFps ? 1 : 0);
+	}
+	ImGui::SliderFloat("zNear", &m_mainCameraNear, 0.1f, 100.0f);
+	ImGui::SliderFloat("zFar", &m_mainCameraFar, 10.0f, 1000.0f);
+	m_scene->m_orbitCamera->setZNear(m_mainCameraNear);
+	m_scene->m_orbitCamera->setZFar(m_mainCameraFar);
 	ImGui::End();
 
 }

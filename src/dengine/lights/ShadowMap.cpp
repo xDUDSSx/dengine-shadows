@@ -4,6 +4,11 @@
 #include "dengine/framebuffer/Framebuffer.h"
 #include "dengine/camera/AbstractCamera.h"
 #include "dengine/util/Collisions.h"
+#include "dengine/shader/PSSMShader.h"
+#include "dengine/shader/PSSMInstancingShader.h"
+#include "dengine/shader/Shaders.h"
+
+using ShadowType = Dg::RenderOptions::ShadowType;
 
 namespace Dg
 {
@@ -11,8 +16,8 @@ namespace Dg
 void ShadowMap::setupShadowVolume(const glm::vec3& origin, const glm::vec3& target, float width, float zNear, float zFar)
 {
 	float hW = width / 2.0f;
-	m_lightProjection = glm::ortho(-hW, hW, -hW, hW, zNear, zFar);
-	m_lightView = glm::lookAt(origin, target, glm::vec3(0.0f, 1.0f, 0.0f));
+	m_lightProjection = glm::orthoRH_NO(-hW, hW, -hW, hW, zNear, zFar);
+	m_lightView = glm::lookAtRH(origin, target, glm::vec3(0.0f, 1.0f, 0.0f));
 	m_origin = origin;
 	m_target = target;
 	m_dir = glm::normalize(target - origin);
@@ -41,25 +46,75 @@ Frustum createSplitFrustum(float zNear, float zFar, const AbstractCamera& camera
 	return GfxUtils::unprojectMatrix(splitProjection * camera.getView());
 }
 
-void ShadowMap::update(Scene& scene, AbstractCamera& camera)
+Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType)
 {
+	m_shadowType = shadowType;
+	// TODO: Shadow type switching
+	Ptr<Framebuffer> shadowFBO;
+	if (shadowType == ShadowType::REGULAR)
+	{
+		auto d = DepthAttachment(false, 100, 100, false);
+		d.m_minFilter = GL_NEAREST;
+		d.m_magFilter = GL_NEAREST;
+		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
+		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
+		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
+		shadowFBO = std::make_shared<Framebuffer>(1024, 1024);
+		shadowFBO->setDepthAttachment(d);
+	}
+	else
+	{
+		auto d = DepthAttachment(false, 100, 100, false);
+		d.m_use2DTextureArray = true;
+		d.m_2DTextureArrayLayers = PSSM_CASCADES;
+		d.m_minFilter = GL_NEAREST;
+		d.m_magFilter = GL_NEAREST;
+		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
+		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
+		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
+		shadowFBO = std::make_shared<Framebuffer>(1024, 1024);
+		shadowFBO->setDepthAttachment(d);
+	}
+	return shadowFBO;
+}
+
+void ShadowMap::update(ShadowType shadowType, Scene& scene, AbstractCamera& camera)
+{
+	if (m_shadowType != shadowType)
+	{
+		bool wasUsingPSSM = m_shadowType == ShadowType::REGULAR;
+		bool wantsToUsePSSM = shadowType != ShadowType::REGULAR;
+		if (wasUsingPSSM && !wantsToUsePSSM)
+		{
+		}
+		else if (!wasUsingPSSM && wantsToUsePSSM)
+		{
+		}
+	}
+	m_shadowType = shadowType;
+
 	// TODO: Refactoring, functions work with member state which is a mess
 	precalculateBoundingBoxes(scene);
 	computeTightShadowFrustum(camera, scene);
+
+	m_splitPositions.clear();
+	m_splitPositions.resize(m_splitCount + 1);
+	calculateSplitPositions(m_splitPositions, m_splitCount, m_splitSchemeWeight, m_zNearTight, m_zFarTight);
+
+	m_casters.clear();
 	m_splitFrustums.clear();
+	m_splitFrustumsAABBs.clear();
 	m_lightPvmMatrices.clear();
 	m_lightPvmMatrices.resize(m_splitCount);
 	m_cropMatrices.clear();
 	m_cropMatrices.resize(m_splitCount);
-	m_splitPositions.clear();
-	m_splitPositions.resize(m_splitCount + 1);
-	calculateSplitPositions(m_splitPositions, m_splitCount, 0.5f, m_zNearTight, m_zFarTight);
-	m_casters.clear();
+
 	for (int i = 0; i < m_splitCount; i++)
 	{
 		Frustum splitFrustum = createSplitFrustum(m_splitPositions[i], m_splitPositions[i + 1], camera);
 		m_splitFrustums.push_back(splitFrustum);
 		BoundingBox splitFrustumAABB = splitFrustum.createAABB();
+		m_splitFrustumsAABBs.push_back(splitFrustumAABB);
 		std::vector<GameObject*> localCasters = findShadowCasters(splitFrustumAABB, i, scene);
 		if (i == 0)
 			m_debugCasters = localCasters;
@@ -87,7 +142,7 @@ BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projectio
 	return ndcBox;
 }
 
-//void ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB)
+// void ShadowMap::buildSceneInDependentCropMatrix(const BoundingBox& frustumAABB)
 //{
 //	glm::mat4 lightPvm = m_lightProjection * m_lightView;
 //
@@ -97,20 +152,21 @@ BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projectio
 //
 //	m_cropMatrix = glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
 //	m_croppedLightProjection = m_cropMatrix * m_lightProjection;
-//}
+// }
 
 glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAABB, const glm::mat4& lightPvm,
-                                                   const std::vector<GameObject*>& casters, const std::vector<Ptr<GameObject>>& receivers)
+                                                   const std::vector<GameObject*>& casters,
+                                                   const std::vector<Ptr<GameObject>>& receivers)
 {
 	BoundingBox ndcObjectsAABB;
 
 	// TODO: Seemingly wrapping just the casters does the trick
 	//  THIS MAY BECAUSE WE'RE ONLY SAMPLING ONE CASCADE SO FAR
 	// Project each receiver and caster bounding box
-//	for (const auto& object : receivers)
-//	{
-//		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
-//	}
+	//	for (const auto& object : receivers)
+	//	{
+	//		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
+	//	}
 	for (const auto& object : casters)
 	{
 		ndcObjectsAABB.unionBox(projectBoxIntoNDC(object->m_aabb, lightPvm));
@@ -126,20 +182,20 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 	ndcBox.m_max.x = glm::min(ndcObjectsAABB.m_max.x, ndcFrustumAABB.m_max.x);
 	ndcBox.m_min.y = glm::max(ndcObjectsAABB.m_min.y, ndcFrustumAABB.m_min.y);
 	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
-//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
-//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
-	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
-	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
+	//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
+	//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
+//	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
+//	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
 	// TODO: Fix the Z bounds = near -> <= 1.0, far >= receiver.bb.min.z
-//	ndcBox.m_min.z = std::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
-//	ndcBox.m_max.z = std::min(ndcObjectsAABB.m_max.z, 1.0f);
+	ndcBox.m_min.z = std::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
+	ndcBox.m_max.z = std::min(ndcObjectsAABB.m_max.z, 1.0f);
 
-//	ndcBox.m_max.z = 1.0f;
+	//	ndcBox.m_max.z = 1.0f;
 
 //	BoundingBox ndcBox = ndcObjectsAABB;
 
-//	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
-//	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
+	//	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
+	//	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
 
 	if (casters.empty())
 	{
@@ -147,7 +203,7 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 	}
 
 	glm::mat4 cropMatrix =
-	    glm::ortho(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
+	    glm::orthoRH_NO(ndcBox.m_min.x, ndcBox.m_max.x, ndcBox.m_min.y, ndcBox.m_max.y, ndcBox.m_max.z, ndcBox.m_min.z);
 	return cropMatrix;
 }
 
@@ -230,9 +286,9 @@ std::vector<GameObject*> ShadowMap::findShadowCasters(BoundingBox frustumAABB, i
 }
 
 std::pair<float, float> ShadowMap::findTightNearAndFarPlanes(const glm::vec3& origin, const glm::vec3& dir,
-                                                             const std::vector<Ptr<GameObject>> objects)
+                                                             const std::vector<Ptr<GameObject>>& objects)
 {
-	float minZ = FLT_MAX;
+	float minZ = std::numeric_limits<float>::max();
 	float maxZ = 0;
 
 	for (const auto& object : objects)
@@ -249,6 +305,92 @@ std::pair<float, float> ShadowMap::findTightNearAndFarPlanes(const glm::vec3& or
 		}
 	}
 	return {minZ, maxZ};
+}
+void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions,
+                                 const DisplayOptions& displayOptions)
+{
+	// TODO: Shadow rendering should probably be handled per light
+	//   Either perform shadow rendering within Light objects? (that doesn't sound right, not really a light's responsibility)
+	//   Or create some separate system ShadowManager, that will keep track of lights and their shadow buffers separately
+	//   (preferrable)
+	// Shadows phase 1
+	// TODO: Render the scene from POV of the light
+	// TODO: This method is huge, it should be split up into smaller ones
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+	glStencilMask(0xFF);
+
+	// Render shadow casters into shadow map
+	Ptr<Framebuffer> shadowFBO = shadowFBOPtr.lock();
+	shadowFBO->start();
+	{
+		glClear(GL_DEPTH_BUFFER_BIT);
+
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT); // Cull front faces to try help with shadow artefacts
+
+		PSSMShader* pssmShader = Shaders::instance().getShaderPtr<PSSMShader>();
+		PSSMInstancingShader* pssmInstancingShader = Shaders::instance().getShaderPtr<PSSMInstancingShader>();
+		for (auto& shadowCaster : m_casters)
+		{
+			shadowCaster->m_wboit = false; // Not using wboit
+			if (!shadowCaster->m_visible)
+				continue;
+			if (!displayOptions.shouldDraw(*shadowCaster))
+				continue;
+
+			Renderer::RenderContext context;
+			// context.m_renderType = Renderer::RenderType::DEPTH;
+			context.m_renderType = Renderer::RenderType::CUSTOM;
+
+			switch (renderOptions.shadowType)
+			{
+				case RenderOptions::ShadowType::PSSM_GEO:
+					pssmShader->cropMatrices = m_cropMatrices;
+					pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+					pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
+					//				shadowShader->m_lightPos = lightPos;
+					//				shadowShader->m_zFar = far_plane;
+					//				shadowShader->getSunPositionFromViewMatrix(view);
+					context.m_instanceCount = 0;
+					context.m_shader = pssmShader;
+					break;
+				case RenderOptions::ShadowType::PSSM_INSTANCED:
+					pssmInstancingShader->cropMatrices = m_cropMatrices;
+					pssmInstancingShader->splitBegin = shadowCaster->m_shadowSplitBegin;
+					pssmInstancingShader->splitEnd = shadowCaster->m_shadowSplitEnd;
+
+					// Render as many instances as the number of cascades the shadow caster is part of
+					context.m_instanceCount = shadowCaster->m_shadowSplitEnd - shadowCaster->m_shadowSplitBegin + 1;
+					context.m_shader = pssmInstancingShader;
+					break;
+				case RenderOptions::ShadowType::REGULAR:
+					// TODO: Implement simple shadow maps again
+					break;
+			}
+
+			shadowCaster->prepareRenderContext(context);
+			if (!shadowCaster->m_shadowCullFront)
+				glDisable(GL_CULL_FACE);
+			Renderer::render(shadowCaster, m_lightView, m_lightProjection, context);
+			//			shadowCaster->render(shadowMap.m_lightView, shadowMap.m_lightProjection, context);
+			if (!shadowCaster->m_shadowCullFront)
+				glEnable(GL_CULL_FACE);
+
+			// Reset split indicators for next frame
+			shadowCaster->m_shadowSplitBegin = INT_MAX;
+			shadowCaster->m_shadowSplitEnd = INT_MIN;
+		}
+		glDisable(GL_CULL_FACE);
+	}
+	shadowFBO->end();
+	// Shadows phase 2
 }
 
 } // namespace Dg

@@ -29,8 +29,10 @@ std::unordered_map<std::string, InputManager::Action> InputManager::m_actions;
 
 void InputManager::init()
 {
+	// TODO: (Dr) This is unused!
 	bindKey("pan", Keys::mouseMiddle, {});
 	bindKey("rotate", Keys::mouseRight, {});
+	bindKey("zoomAlt", Keys::mouseLeft, {});
 	bindKey("zoom", Keys::mouseScrlUp, {}, +1.0f);
 	bindKey("zoom", Keys::mouseScrlDown, {}, -1.0f);
 }

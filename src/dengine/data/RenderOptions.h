@@ -30,6 +30,7 @@ class RenderOptions
 	int lightingModel;
 	bool shadows;
 	RenderOptions::ShadowType shadowType;
+	float pssmShadowsSplitSchemeWeight;
 
 	Frustum tightShadowFrustum; // TODO: Remove
 

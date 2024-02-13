@@ -178,7 +178,5 @@ class Scene
 	void sortExplicitlyOrderedTransparentEntities(std::vector<Entity*>& entities);
 
 	void renderSortedTransparentEntities(glm::mat4 view, glm::mat4 projection, const std::vector<Entity*>& entities) const;
-
-	void drawShadowBuffer(ShadowMap& shadowMap, const RenderOptions& renderOptions, const DisplayOptions& displayOptions);
 };
 } // namespace Dg

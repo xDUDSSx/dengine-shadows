@@ -5,6 +5,9 @@
 #include "dengine/platform/CommonGL.h"
 #include "dengine/camera/Frustum.h"
 #include "dengine/util/BoundingBox.h"
+#include "dengine/data/RenderOptions.h"
+#include "dengine/framebuffer/DepthAttachment.h"
+#include "dengine/data/DisplayOptions.h"
 
 #define PSSM_CASCADES 4
 
@@ -18,6 +21,8 @@ class Framebuffer;
 class ShadowMap
 {
   public:
+	RenderOptions::ShadowType m_shadowType;
+
 	glm::mat4 m_lightView;
 	glm::mat4 m_lightProjection;
 
@@ -33,9 +38,11 @@ class ShadowMap
 	glm::vec3 m_dir;
 	float m_width;
 
+	float m_splitSchemeWeight = 0.5f;
+
 	std::vector<Ptr<GameObject>> m_receivers;
 	std::set<GameObject*> m_casters;
-	std::vector<GameObject*> m_debugCasters;
+
 	Frustum m_cameraFrustum;
 	BoundingBox m_cameraFrustumAABB;
 	Frustum m_tightCameraFrustum;
@@ -44,27 +51,31 @@ class ShadowMap
 	glm::mat4 m_cropMatrix{1.0f}; // TODO: Remove
 	glm::mat4 m_croppedLightProjection{1.0f}; // TODO: Remove
 
-	BoundingBox m_testBox; // TODO: Remove
-
-	//
-	std::vector<Frustum> m_splitFrustums;
-	//
-
 	int m_splitCount{PSSM_CASCADES};
+	std::vector<Frustum> m_splitFrustums;
+	std::vector<BoundingBox> m_splitFrustumsAABBs;
 	std::vector<float> m_splitPositions;
 	std::vector<glm::mat4> m_cropMatrices;
 	std::vector<glm::mat4> m_lightPvmMatrices;
 
+	// Debug
+	std::vector<GameObject*> m_debugCasters;
+	BoundingBox m_testBox; // TODO: Remove
+
   public:
-	WPtr<Framebuffer> m_shadowFBO;
+//	WPtr<Framebuffer> m_shadowFBO;
 
 	/**
-	 * Calculates matrices that define the maximum bounds of the light space. That is the area in which this shadow map operates.
-	 * No shadows will be rendered outside of this area. For a global sun lamp, this area should encompass the whole scene.
+	 * Sets the position and direction of the light space volume.
+	 * The scene should be ahead of the plane defined by the origin and direction vector.
 	 */
 	void setupShadowVolume(const glm::vec3& origin, const glm::vec3& target, float width, float zNear, float zFar);
 
-	void update(Scene& scene, AbstractCamera& camera);
+	void update(RenderOptions::ShadowType shadowType, Scene& scene, AbstractCamera& camera);
+
+	Ptr<Framebuffer> createShadowFramebuffer(RenderOptions::ShadowType shadowType);
+
+	void drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions, const DisplayOptions& displayOptions);
 
   private:
 //	void buildSceneInDependentCropMatrix(const BoundingBox& box);
@@ -74,13 +85,13 @@ class ShadowMap
 
 	void computeTightShadowFrustum(AbstractCamera& camera, Scene& scene);
 
-	void precalculateBoundingBoxes(Scene& scene);
+	static void precalculateBoundingBoxes(Scene& scene);
 
 	static std::vector<Ptr<GameObject>> findShadowReceivers(const BoundingBox& box, Scene& scene);
 	std::vector<GameObject*> findShadowCasters(BoundingBox frustumAABB, int splitIndex, Scene& scene);
 
 	static std::pair<float, float> findTightNearAndFarPlanes(const glm::vec3& origin, const glm::vec3& dir,
-	                                                         const std::vector<Ptr<GameObject>> objects);
+	                                                         const std::vector<Ptr<GameObject>>& objects);
 };
 
 } // namespace Dg

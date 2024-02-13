@@ -8,6 +8,8 @@
 
 using namespace Dg;
 
+#define MIN_RADIUS 0.1f
+
 void OrbitCamera::update()
 {
 	glm::mat4 cameraTransform = glm::mat4(1.0f);
@@ -49,6 +51,16 @@ void OrbitCamera::processInput(double dt, glm::vec2 mousePos, glm::ivec2 windowS
 	}
 
 	mouseWheel(m_dScroll * (m_smoothScroll ? 1.f : 4.f));
+
+	if (InputManager::isActionActive("zoomAlt"))
+	{
+		const float ratio = m_radius / m_zNear / 1000.0f;
+		m_radius = m_radius + InputManager::m_mouseYDelta * m_zoomSpeed * ratio;
+		if (m_radius < MIN_RADIUS)
+		{
+			m_radius = MIN_RADIUS;
+		}
+	}
 
 	m_dScroll *= static_cast<float>(std::min(std::max(-3.05 * dt + 0.89, 0.4), 0.93) * (m_smoothScroll ? 1 : 0));
 
@@ -106,9 +118,9 @@ void OrbitCamera::mouseWheel(float scroll)
 
 	const float ratio = m_radius / m_zNear / 100.0f;
 	m_radius = m_radius - scroll * m_zoomSpeed * ratio;
-	if (m_radius < 0.01f)
+	if (m_radius < MIN_RADIUS)
 	{
-		m_radius = 0.01f;
+		m_radius = MIN_RADIUS;
 	}
 }
 

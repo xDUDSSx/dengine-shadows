@@ -168,6 +168,7 @@ int Application::init(const char* title)
 	InputManager::bindKey("scroll", Keys::mouseScrlDown, {}, -1.0f);
 	InputManager::bindKey("pan", Keys::mouseMiddle);
 	InputManager::bindKey("rotate", Keys::mouseRight);
+	InputManager::bindKey("zoomAlt", Keys::mouseLeft, {Keys::Code::altl});
 
 	onInit();
 
