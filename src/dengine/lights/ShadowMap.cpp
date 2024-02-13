@@ -46,7 +46,7 @@ Frustum createSplitFrustum(float zNear, float zFar, const AbstractCamera& camera
 	return GfxUtils::unprojectMatrix(splitProjection * camera.getView());
 }
 
-Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType)
+Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType, int resolution)
 {
 	m_shadowType = shadowType;
 	// TODO: Shadow type switching
@@ -59,7 +59,7 @@ Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType)
 		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
 		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
 		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-		shadowFBO = std::make_shared<Framebuffer>(1024, 1024);
+		shadowFBO = std::make_shared<Framebuffer>(resolution, resolution);
 		shadowFBO->setDepthAttachment(d);
 	}
 	else
@@ -72,7 +72,7 @@ Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType)
 		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
 		d.m_textureWrapT = GL_CLAMP_TO_BORDER;
 		d.m_textureBorderColor = glm::vec4(1.f, 1.f, 1.f, 1.f);
-		shadowFBO = std::make_shared<Framebuffer>(1024, 1024);
+		shadowFBO = std::make_shared<Framebuffer>(resolution, resolution);
 		shadowFBO->setDepthAttachment(d);
 	}
 	return shadowFBO;
@@ -322,7 +322,7 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 
 	// Render shadow casters into shadow map
 	Ptr<Framebuffer> shadowFBO = shadowFBOPtr.lock();
-	shadowFBO->start();
+	shadowFBO->start(renderOptions.shadowResolution, renderOptions.shadowResolution);
 	{
 		glClear(GL_DEPTH_BUFFER_BIT);
 

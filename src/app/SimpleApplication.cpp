@@ -35,6 +35,7 @@ bool SimpleApplication::onInit()
 	renderOptions.selection = false;
 	renderOptions.shadows = true;
 	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
+	renderOptions.shadowResolution = m_shadowResolution;
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -69,7 +70,7 @@ void SimpleApplication::onDisplay()
 	int height = m_windowSize.y;
 
 	Dg::RenderOptions& renderOptions = m_renderTarget->getRenderOptions();
-	m_renderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
+	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	m_secondRenderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 
 	m_scene->draw(width, height, *m_renderTarget, m_displayOptions);
@@ -135,6 +136,12 @@ void SimpleApplication::onDisplay()
 	ImGui::SliderFloat("zFar", &m_mainCameraFar, 10.0f, 1000.0f);
 	m_scene->m_orbitCamera->setZNear(m_mainCameraNear);
 	m_scene->m_orbitCamera->setZFar(m_mainCameraFar);
+
+	if (ImGui::InputInt("Shadow map resolution", &m_shadowResolution, 256, 1024))
+	{
+		renderOptions.shadowResolution = m_shadowResolution;
+	}
+
 	ImGui::End();
 }
 

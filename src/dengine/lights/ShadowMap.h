@@ -73,7 +73,7 @@ class ShadowMap
 
 	void update(RenderOptions::ShadowType shadowType, Scene& scene, AbstractCamera& camera);
 
-	Ptr<Framebuffer> createShadowFramebuffer(RenderOptions::ShadowType shadowType);
+	Ptr<Framebuffer> createShadowFramebuffer(RenderOptions::ShadowType shadowType, int resolution);
 
 	void drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions, const DisplayOptions& displayOptions);
 

@@ -22,6 +22,8 @@ class SimpleApplication : public Dengine::Application
 	float m_mainCameraNear = 1.5f;
 	float m_mainCameraFar = 500.0f;
 
+	int m_shadowResolution = 2048;
+
 	SimpleApplication();
 
   protected:

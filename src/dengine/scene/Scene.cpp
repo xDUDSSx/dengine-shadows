@@ -59,7 +59,8 @@ void Scene::renderShadowMap(SceneRenderTarget& renderTarget, const DisplayOption
 		if (wasUsingPSSM != wantsToUsePSSM)
 		{
 			// Recreate the shadow map fbo
-			Ptr<Framebuffer> newShadowFBO = shadowMap->createShadowFramebuffer(renderOptions.shadowType);
+			Ptr<Framebuffer> newShadowFBO =
+			    shadowMap->createShadowFramebuffer(renderOptions.shadowType, renderOptions.shadowResolution);
 			renderTarget.removeFramebuffer("shadows");
 			renderTarget.addFramebuffer("shadows", newShadowFBO);
 
@@ -699,7 +700,8 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 
 	if (options.shadows)
 	{
-		Ptr<Framebuffer> shadowFBO = m_lighting->m_shadowSunLight.m_shadowMap->createShadowFramebuffer(options.shadowType);
+		Ptr<Framebuffer> shadowFBO =
+		    m_lighting->m_shadowSunLight.m_shadowMap->createShadowFramebuffer(options.shadowType, options.shadowResolution);
 		renderTarget->addFramebuffer("shadows", shadowFBO);
 	}
 
