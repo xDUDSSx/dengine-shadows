@@ -67,7 +67,6 @@ void Scene::renderShadowMap(SceneRenderTarget& renderTarget, const DisplayOption
 
 			// Reload phong shader with or without the PSSM define
 			auto* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
-			LOG_INFO("Phong shader ID before reload: {}", phongShader->m_id);
 			Shaders::reloadShader(*phongShader, phongShader->m_vertSource, phongShader->m_fragSource, phongShader->m_geoSource,
 			                      wantsToUsePSSM ? "#define PSSM" : "");
 		}
@@ -293,17 +292,26 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			if (renderOptions.shadows)
 			{
 				phongShader->m_shadowMapId = shadowFBO->getDepthAttachment()->m_id;
-				//			phongShader->m_lightMatrix = lightMatrix;
-				//			phongShader->m_lightPos = lightPos;
-				//			phongShader->m_lightView = lightMatrix;
 				m_lighting->m_shadowSunLight.setUniforms(*phongShader, 0);
 			}
 
 			m_unorderedTransparentEntities.clear();
 			m_explicitTransparencyOrderEntitiesFirst.clear();
 			m_explicitTransparencyOrderEntitiesLast.clear();
-			for (auto& entity : m_entities)
+
+			// Only render entities marked as receivers in the shadow map
+			// These are the only objects visible by the frustum
+			bool drawReceiversOnly = (!displayOptions.showDebug || displayOptions.showDebugRenderReceiversOnly);
+			int entityCount =
+			    drawReceiversOnly ? m_lighting->m_shadowSunLight.m_shadowMap->m_receivers.size() : m_entities.size();
+			for (int i = 0; i < entityCount; i++)
 			{
+				Entity* entity;
+				if (drawReceiversOnly)
+					entity = m_lighting->m_shadowSunLight.m_shadowMap->m_receivers[i].get();
+				else
+					entity = m_entities[i].get();
+
 				if (!entity->m_visible)
 					continue;
 				if (!displayOptions.shouldDraw(*entity))
@@ -333,18 +341,18 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					if (entity->m_explicitTransparencyOrder < 10000)
 					{
 						// Rendered BEFORE unordered ones
-						m_explicitTransparencyOrderEntitiesFirst.push_back(entity.get());
+						m_explicitTransparencyOrderEntitiesFirst.push_back(entity);
 					}
 					else
 					{
 						// Rendered AFTER unordered ones
-						m_explicitTransparencyOrderEntitiesLast.push_back(entity.get());
+						m_explicitTransparencyOrderEntitiesLast.push_back(entity);
 					}
 				}
 				else
 				{
 					// Unordered entities
-					m_unorderedTransparentEntities.push_back(entity.get());
+					m_unorderedTransparentEntities.push_back(entity);
 				}
 			}
 
@@ -410,11 +418,6 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 					DebugDraw::drawFrustum(croppedLightProjection, colors[0], view, projection);
 				}
 			}
-
-			//		glm::vec4 testVec = glm::vec4(0.f, 0.f, 0.f, 1.0f);
-			//		testVec = projection * view * testVec;
-			//		GfxUtils::perspectiveDivide(testVec);
-			//		LOG_INFO("Test vec clip: {}, {}, {}", testVec.x, testVec.y, testVec.z);
 
 			for (const auto caster : shadowMap->m_debugCasters)
 			{

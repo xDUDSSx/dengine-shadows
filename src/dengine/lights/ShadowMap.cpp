@@ -190,20 +190,9 @@ glm::mat4 ShadowMap::buildSceneDependentCropMatrix(const BoundingBox& frustumAAB
 	ndcBox.m_max.x = glm::min(ndcObjectsAABB.m_max.x, ndcFrustumAABB.m_max.x);
 	ndcBox.m_min.y = glm::max(ndcObjectsAABB.m_min.y, ndcFrustumAABB.m_min.y);
 	ndcBox.m_max.y = glm::min(ndcObjectsAABB.m_max.y, ndcFrustumAABB.m_max.y);
-	//	ndcBox.m_min.z = glm::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
-	//	ndcBox.m_max.z = glm::min(ndcObjectsAABB.m_max.z, ndcFrustumAABB.m_max.z);
-	//	ndcBox.m_min.z = ndcObjectsAABB.m_min.z;
-	//	ndcBox.m_max.z = ndcObjectsAABB.m_max.z;
-	// TODO: Fix the Z bounds = near -> <= 1.0, far >= receiver.bb.min.z
+
 	ndcBox.m_min.z = std::max(ndcObjectsAABB.m_min.z, ndcFrustumAABB.m_min.z);
 	ndcBox.m_max.z = std::min(ndcObjectsAABB.m_max.z, 1.0f);
-
-	//	ndcBox.m_max.z = 1.0f;
-
-	//	BoundingBox ndcBox = ndcObjectsAABB;
-
-	//	ndcBox.m_min = glm::max(ndcObjectsAABB.m_min, ndcFrustumAABB.m_min);
-	//	ndcBox.m_max = glm::min(ndcObjectsAABB.m_max, ndcFrustumAABB.m_max);
 
 	if (casters.empty())
 	{
@@ -220,7 +209,6 @@ void ShadowMap::computeTightShadowFrustum(AbstractCamera& camera, Scene& scene)
 	m_cameraFrustum = GfxUtils::unprojectMatrix(camera.getProjection() * camera.getView());
 	m_cameraFrustumAABB = m_cameraFrustum.createAABB();
 	m_receivers = findShadowReceivers(m_cameraFrustumAABB, scene);
-	//	LOG_INFO("Receiver count: {}", m_receivers.size());
 	if (!m_receivers.empty())
 	{
 		auto tightNearFar = findTightNearAndFarPlanes(camera.getPosition(), camera.getDirection(), m_receivers);
@@ -303,14 +291,6 @@ std::pair<float, float> ShadowMap::findTightNearAndFarPlanes(const glm::vec3& or
 void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions,
                                  const DisplayOptions& displayOptions)
 {
-	// TODO: Shadow rendering should probably be handled per light
-	//   Either perform shadow rendering within Light objects? (that doesn't sound right, not really a light's responsibility)
-	//   Or create some separate system ShadowManager, that will keep track of lights and their shadow buffers separately
-	//   (preferrable)
-	// Shadows phase 1
-	// TODO: Render the scene from POV of the light
-	// TODO: This method is huge, it should be split up into smaller ones
-
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glDepthMask(GL_TRUE);
@@ -357,9 +337,7 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 					context.m_renderType = Renderer::RenderType::CUSTOM;
 					pssmShader->splitBegin = shadowCaster->m_shadowSplitBegin;
 					pssmShader->splitEnd = shadowCaster->m_shadowSplitEnd;
-					//				shadowShader->m_lightPos = lightPos;
-					//				shadowShader->m_zFar = far_plane;
-					//				shadowShader->getSunPositionFromViewMatrix(view);
+
 					context.m_instanceCount = 0;
 					context.m_shader = pssmShader;
 					break;
@@ -403,7 +381,6 @@ void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOpt
 		glDisable(GL_CULL_FACE);
 	}
 	shadowFBO->end();
-	// Shadows phase 2
 }
 
 } // namespace Dg

@@ -26,8 +26,6 @@ uniform float alphaCutoff = 0.1;
 
 uniform mat4 viewMatrix;
 
-uniform mat4 u_testMatrix;
-
 // Textures ====================================
 
 uniform float normalStrength;
@@ -160,14 +158,6 @@ float distancePointToPlane(vec3 point, vec3 planePoint, vec3 planeNormal)
 //float calculateShadowFactor(vec3 sunPos, vec3 sunDir)
 float calculateShadowFactor(mat4 lightPvm, int splitIndex, vec3 normal, vec3 lightDir)
 {
-//	return 1.0;
-//	return texture(u_shadowMap, vec2(0.1, 0.1)).r;
-
-//	float lightDist = distancePointToPlane(FragPosWorld, sunPos, sunDir);
-
-//	// get vector between fragment position and light position
-//	vec3 fragToLight = fragPos - lightPos;
-
 	vec4 lightSpaceFragPos = lightPvm * FragPosWorld;
 	vec3 lightNDCSpaceFragPos = lightSpaceFragPos.xyz / lightSpaceFragPos.w;
 	lightNDCSpaceFragPos = lightNDCSpaceFragPos * 0.5 + 0.5;
@@ -315,9 +305,8 @@ vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragP
 			break;
 		}
 	}
-	//	return vec3(map(index, 0., PSSM_CASCADES, 0., 1.)); // For visualization TODO
 #else
-	shadow = calculateShadowFactor(u_testMatrix, 0, N, L);
+	shadow = calculateShadowFactor(light.lightPvm, 0, N, L);
 #endif
 	if (u_visualizeShadowMap)
 		return ambientLight + ((1.0 - shadow) * (diffuseLight + specularLight)) * splitColors[index];

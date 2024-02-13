@@ -25,6 +25,7 @@ public:
 	bool showGridZAxis{true};
 
 	bool showDebug{false};
+	bool showDebugRenderReceiversOnly{false};
 	bool showDebugFrustumAABBs{false};
 	bool showDebugFrustums{true};
 	bool showDebugShadowMapVolumes{true};

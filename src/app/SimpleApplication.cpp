@@ -106,6 +106,8 @@ void SimpleApplication::onDisplay()
 		ImGui::Checkbox("Show frustum AABBs", &m_secondDisplayOptions.showDebugFrustumAABBs);
 		ImGui::SameLine();
 		ImGui::Checkbox("Show shadow volumes", &m_secondDisplayOptions.showDebugShadowMapVolumes);
+		ImGui::SameLine();
+		ImGui::Checkbox("Cull objects outside frustum", &m_secondDisplayOptions.showDebugRenderReceiversOnly);
 	}
 	else
 	{

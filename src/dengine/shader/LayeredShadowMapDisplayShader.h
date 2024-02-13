@@ -7,13 +7,14 @@ namespace Dg
 {
 class LayeredShadowMapDisplayShader : public Shader
 {
-protected:
+  protected:
 	GLint m_sourceSampler;
 	GLint m_layeredSourceSampler;
 
 	GLint m_resolutionId;
 	GLint m_layeredLoc;
-public:
+
+  public:
 	GLuint m_sourceTextureId{0};
 	bool m_layered{false};
 

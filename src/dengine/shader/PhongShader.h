@@ -35,8 +35,6 @@ protected:
 
 	// Shadow mapping
 	GLint m_shadowMapLoc; // TODO: Add support for multiple shadow samplers
-	GLint m_lightMatrixLoc;  // TODO: Remove
-	GLint m_lightViewLoc;  // TODO: Remove
 
 	GLint m_visualizeShadowMapLoc;
 
@@ -46,12 +44,6 @@ public:
 	glm::vec3 m_tint{1.0f};
 	LightingModel m_lightingModel{BLINN_PHONG};
 	GLuint m_shadowMapId;
-//	glm::mat4 m_lightMatrix{1.0f}; // TODO: (DR) Move to a light UBO
-	glm::vec3 m_lightPos{1.0f};
-	glm::mat4 m_lightView{1.0f};
-
-	GLint m_testMatrixLoc;
-	glm::mat4 m_testMatrix{2.0f};
 
 	bool m_visualizeShadowMap = true;
 	bool m_isUsingPSSM = true;

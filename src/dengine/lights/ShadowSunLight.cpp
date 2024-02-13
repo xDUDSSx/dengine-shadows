@@ -17,27 +17,14 @@ void ShadowSunLight::setUniforms(const PhongShader& shader, int index) const
 	glUniform3fv(glGetUniformLocation(shader.m_id, (prefix + ".direction").c_str()), 1, glm::value_ptr(direction));
 
 	// TODO: Turn into a UBO probably, avoid calling glGetUniform all the time
-	// TODO: Replace with cropped matrix
+
 	if (m_shadowMap->m_shadowType == Dg::RenderOptions::ShadowType::REGULAR)
 	{
-		//	glm::mat4 lightPvm = m_shadowMap->m_lightProjection * m_shadowMap->m_lightView;
-		//	glm::mat4 lightPvmCropped = m_shadowMap->m_croppedLightProjection * m_shadowMap->m_lightView;
-		//		glm::mat4 lightPvmCropped = m_shadowMap->m_cropMatrices[0] * m_shadowMap->m_lightProjection *
-		//m_shadowMap->m_lightView;
-//		LOG_INFO("Setting uniforms to shader ID: {}", shader.m_id);
-		//glUseProgram(shader.m_id);
-		glUniform1f(glGetUniformLocation(shader.m_id, "u_opacity"), 0.222f);
-
-//		glUniform1f(glGetUniformLocation(shader.m_id, "u_testUniform"), 0.8f);
-//
-
 		glm::mat4 lightPvmCropped = m_shadowMap->m_lightPvmMatrices[0];
-		glUniformMatrix4fv(shader.m_testMatrixLoc, 1, GL_FALSE, glm::value_ptr(lightPvmCropped));
-//		GLint lightPvmLoc = glGetUniformLocation(shader.m_id, (prefix + ".lightPvm").c_str());
-//		LOG_INFO("Setting uniform '{}' at location {} to value {}", (prefix + ".lightPvm"), lightPvmLoc, glm::to_string(lightPvmCropped));
-//		glUniformMatrix4fv(lightPvmLoc, 1, GL_FALSE, glm::value_ptr(lightPvmCropped));
-
-//		glUniformMatrix4fv(glGetUniformLocation(shader.m_id, "u_testUniform"), 1, GL_FALSE, glm::value_ptr(lightPvmCropped));
+		GLint lightPvmLoc = glGetUniformLocation(shader.m_id, (prefix + ".lightPvm").c_str());
+		//		LOG_INFO("Setting uniform '{}' at location {} to value {}", (prefix + ".lightPvm"), lightPvmLoc,
+		//glm::to_string(lightPvmCropped));
+		glUniformMatrix4fv(lightPvmLoc, 1, GL_FALSE, glm::value_ptr(lightPvmCropped));
 	}
 	else
 	{

@@ -12,7 +12,6 @@ void ShadowShader::init(bool initSuperclass)
 	if (initSuperclass)
 		ObjectShader::init(true);
 
-//	m_lightPosLoc = glGetUniformLocation(m_id, "u_lightPos");
 	m_zFarLoc = glGetUniformLocation(m_id, "u_zFar");
 
 	m_sunDirLoc = glGetUniformLocation(m_id, "u_sunDir");
@@ -21,7 +20,6 @@ void ShadowShader::init(bool initSuperclass)
 
 void ShadowShader::setUniforms()
 {
-//	glUniform3fv(m_lightPosLoc, 1, glm::value_ptr(m_lightPos));
 	glUniform1f(m_zFarLoc, m_zFar);
 
 	glUniform3fv(m_sunDirLoc, 1, glm::value_ptr(m_sunDir));
