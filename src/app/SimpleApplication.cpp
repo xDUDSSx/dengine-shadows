@@ -79,14 +79,14 @@ void SimpleApplication::onDisplay()
 	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	m_secondRenderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 
-	if (renderOptions.profilingEnabled) m_scene->m_cpuTimer.start();
 	if (renderOptions.profilingEnabled) m_scene->m_gpuTimer.start();
+	if (renderOptions.profilingEnabled) m_scene->m_cpuTimer.start();
 
 	// Draw the main scene
 	m_scene->draw(width, height, *m_renderTarget, m_displayOptions);
 
-	if (renderOptions.profilingEnabled) m_scene->m_gpuTimer.stop();
 	if (renderOptions.profilingEnabled) m_scene->m_cpuTimer.stop();
+	if (renderOptions.profilingEnabled) m_scene->m_gpuTimer.stop();
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderTarget->getOutputFramebuffer().lock()->getId());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -200,9 +200,6 @@ void SimpleApplication::onDisplay()
 	{
 		resetTimers();
 	}
-
-
-//	ImGui::Text(std::to_string(m_scene->m_lighting->m_shadowSunLight.m_shadowMap->m_cpuUpdateTime).c_str());
 
 	ImGui::End();
 }

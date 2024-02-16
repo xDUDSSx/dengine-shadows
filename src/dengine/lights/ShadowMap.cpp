@@ -87,9 +87,7 @@ void ShadowMap::update(ShadowType shadowType, int cascadeCount, Scene& scene, Ab
 	// Assuming all GameObjects have up to date aabb bounding boxes!
 
 	m_splitCount = cascadeCount;
-
-//	auto start = std::chrono::high_resolution_clock::now();
-
+	
 	// Adjust camera planes and create tightShadowFrustum
 	computeTightShadowFrustum(camera, scene);
 
@@ -141,9 +139,6 @@ void ShadowMap::update(ShadowType shadowType, int cascadeCount, Scene& scene, Ab
 			m_lightPvmMatrices[i] = cropMatrix * lightPvm;
 		}
 	}
-//	auto stop = std::chrono::high_resolution_clock::now();
-//	auto duration = duration_cast<std::chrono::microseconds>(stop - start);
-//	m_cpuUpdateTime = duration.count();
 }
 
 BoundingBox projectBoxIntoNDC(const BoundingBox& box, const glm::mat4& projection)
