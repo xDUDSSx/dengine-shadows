@@ -88,9 +88,14 @@ void Scene::renderShadowMap(SceneRenderTarget& renderTarget, const DisplayOption
 
 	// Update shadow maps
 	shadowMap->m_splitSchemeWeight = renderOptions.pssmShadowsSplitSchemeWeight;
+	if (renderOptions.profilingEnabled) m_shadowUpdateTimer.start();
 	shadowMap->update(renderOptions.shadowType, renderOptions.shadowCascadesCount, *this, *m_camera);
+	if (renderOptions.profilingEnabled) m_shadowUpdateTimer.stop();
+
 	// Draw shadow maps
+	if (renderOptions.profilingEnabled) m_shadowMapRenderTimer.start();
 	shadowMap->drawShadowBuffer(renderTarget.getFramebuffer("shadows"), renderOptions, displayOptions);
+	if (renderOptions.profilingEnabled) m_shadowMapRenderTimer.stop();
 }
 
 void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, SceneRenderTarget& renderTarget,
@@ -278,6 +283,8 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		// Standard ordered transparency render
 		////////
 
+		if (renderOptions.profilingEnabled) m_renderTimer.start();
+
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
 		glDepthMask(GL_TRUE);
@@ -449,6 +456,8 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		}
 
 		mainFBO->end(true);
+
+		if (renderOptions.profilingEnabled) m_renderTimer.stop();
 
 		// Return framebuffer
 		renderTarget.setOutputFramebuffer(WPtr<Framebuffer>(mainFBO));

@@ -20,7 +20,7 @@ MainScene::MainScene() : Scene()
 	m_orbitCamera2 = std::make_shared<Dg::OrbitCamera>();
 }
 
-void randomGenerateScifiBlocks(Dg::Scene& scene, glm::vec3 origin)
+void randomGenerateScifiBlocks(const std::string& modelName, float scale, Dg::Scene& scene, glm::vec3 origin)
 {
 	int range = 10;
 	int minRangeX = 2;
@@ -35,10 +35,10 @@ void randomGenerateScifiBlocks(Dg::Scene& scene, glm::vec3 origin)
 				continue;
 //			Dg::Mesh* buildingMesh =
 //			    RMI.mesh(std::string("Data/Models/scifiblock") + std::to_string(Math::randomInt(1, 3)) + ".gltf");
-			Dg::Mesh* buildingMesh = RMI.mesh(std::string("Data/Models/House.glb"));
+			Dg::Mesh* buildingMesh = RMI.mesh(modelName);
 			Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
 			building->m_modelMatrix = glm::translate(building->m_modelMatrix, origin + glm::vec3(x * 20.f, 0.05f, y * 20.0f));
-			building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(10.0f));
+			building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(scale));
 			building->m_modelMatrix =
 			    glm::rotate(building->m_modelMatrix, glm::radians(Math::randomFloat(0.f, 180.f)), glm::vec3(0, 1, 0));
 
@@ -93,7 +93,7 @@ void MainScene::init()
 	Dg::Mesh* planeMesh = RMI.mesh("Data/Models/plane.gltf");
 	Ptr<Dg::TexturedObject> plane =
 	    std::make_shared<Dg::TexturedObject>(planeMesh, Dg::Shaders::instance().getShaderPtr<Dg::PhongShader>());
-	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(200.f, 1.0f, 200.f));
+	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(300.f, 1.0f, 600.f));
 	plane->m_modelMatrix = glm::rotate(plane->m_modelMatrix, glm::radians(90.0f), glm::vec3(0, 0, 1));
 	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(50.f));
 	//	plane->m_modelMatrix = glm::scale(plane->m_modelMatrix, glm::vec3(15.f));
@@ -154,14 +154,21 @@ void MainScene::init()
 	{
 		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/hut.obj");
 		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
-		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-40.f, -0.1f, 35.0f));
-		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-5.f, -0.1f, -45.0f));
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(0.8f));
 		for (auto& meshPart : building->m_mesh->m_meshParts)
 		{
 			meshPart.material.ambient = glm::vec3(0.085f);
 		}
 		addEntity(building);
 	}
+
+	Dg::Mesh* boxMesh = RMI.mesh("Data/Models/Duck.gltf");
+	Ptr<Dg::TexturedObject> metalBox = std::make_shared<Dg::TexturedObject>(boxMesh);
+	metalBox->m_modelMatrix = glm::translate(metalBox->m_modelMatrix, glm::vec3(10.0f, 0.0f, -17.0f));
+	metalBox->m_modelMatrix = glm::scale(metalBox->m_modelMatrix, glm::vec3(7.0f));
+	metalBox->m_modelMatrix = glm::rotate(metalBox->m_modelMatrix, glm::radians(-117.f), glm::vec3(0.f, 1.f, 0.f));
+	addEntity(metalBox);
 
 	int range = 10;
 	int minRange = 2;
@@ -177,7 +184,39 @@ void MainScene::init()
 		addEntity(metalBox);
 	}
 
-	randomGenerateScifiBlocks(*this, glm::vec3(0, 0, 0));
+	randomGenerateScifiBlocks("Data/Models/House.glb", 10.0f, *this, glm::vec3(0, 0, 0));
+
+	// Some more large buildings in the back
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingSmall.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(1.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(130.f, -3.0f, -290.0f));
+		addEntity(building);
+	}
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingLarge.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(1.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(130.f, -3.0f, -290.0f));
+		addEntity(building);
+	}
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingSmall.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(1.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -220.0f));
+		building->m_modelMatrix = glm::rotate(building->m_modelMatrix, glm::radians(-117.f), glm::vec3(0.f, 1.f, 0.f));
+		addEntity(building);
+	}
+	{
+		Dg::Mesh* buildingMesh = RMI.mesh("Data/Models/buildingLarge.glb");
+		Ptr<Dg::TexturedObject> building = std::make_shared<Dg::TexturedObject>(buildingMesh);
+		building->m_modelMatrix = glm::scale(building->m_modelMatrix, glm::vec3(1.5f));
+		building->m_modelMatrix = glm::translate(building->m_modelMatrix, glm::vec3(-60.f, -3.0f, -220.0f));
+		building->m_modelMatrix = glm::rotate(building->m_modelMatrix, glm::radians(-117.f), glm::vec3(0.f, 1.f, 0.f));
+		addEntity(building);
+	}
 
 	//	int range = 10;
 	//	int minRange = 2;

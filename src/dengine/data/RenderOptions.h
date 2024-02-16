@@ -34,6 +34,7 @@ class RenderOptions
 	float pssmShadowsSplitSchemeWeight;
 	int shadowResolution;
 	float shadowBias;
+	bool profilingEnabled;
 
 	Frustum tightShadowFrustum; // TODO: Remove
 

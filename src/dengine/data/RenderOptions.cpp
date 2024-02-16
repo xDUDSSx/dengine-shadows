@@ -21,4 +21,5 @@ RenderOptions::RenderOptions()
 	pssmShadowsSplitSchemeWeight = 0.5f;
 	shadowResolution = 1024;
 	shadowBias = 0.0003f;
+	profilingEnabled = false;
 }

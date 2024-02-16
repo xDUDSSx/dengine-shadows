@@ -14,6 +14,7 @@
 #include "dengine/entity/GameObject.h"
 #include "dengine/framebuffer/Framebuffer.h"
 #include "dengine/lights/Lighting.h"
+#include "dengine/util/Profiling.h"
 
 namespace Dg
 {
@@ -56,6 +57,15 @@ class Scene
 
 	// Temporary list for selection/highlighting
 	std::vector<Entity*> m_highlightedEntities;
+
+  public:
+	// Profiling
+	Profiling::GPUTimer m_gpuTimer;
+	Profiling::CPUTimer m_cpuTimer;
+
+	Profiling::CPUTimer m_shadowUpdateTimer;
+	Profiling::GPUTimer m_shadowMapRenderTimer;
+	Profiling::GPUTimer m_renderTimer;
 
   public:
 	explicit Scene();

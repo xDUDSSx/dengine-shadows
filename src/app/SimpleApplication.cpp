@@ -41,6 +41,7 @@ bool SimpleApplication::onInit()
 	renderOptions.shadows = true;
 	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	renderOptions.shadowResolution = m_shadowResolution;
+	renderOptions.profilingEnabled = true;
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -78,7 +79,14 @@ void SimpleApplication::onDisplay()
 	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	m_secondRenderTarget->getRenderOptions().shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 
+	if (renderOptions.profilingEnabled) m_scene->m_cpuTimer.start();
+	if (renderOptions.profilingEnabled) m_scene->m_gpuTimer.start();
+
+	// Draw the main scene
 	m_scene->draw(width, height, *m_renderTarget, m_displayOptions);
+
+	if (renderOptions.profilingEnabled) m_scene->m_gpuTimer.stop();
+	if (renderOptions.profilingEnabled) m_scene->m_cpuTimer.stop();
 
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_renderTarget->getOutputFramebuffer().lock()->getId());
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -132,13 +140,17 @@ void SimpleApplication::onDisplay()
 		m_scene->m_lighting->m_shadowSunLight.updateShadowVolume(50, 1.0f, 100.0f);
 	}
 	const char* items[] = {"Regular", "PSSM Geometry shader", "PSSM Instancing"};
-	ImGui::Combo("Shadow type", &m_shadowType, items, 3, 4);
+	if (ImGui::Combo("Shadow type", &m_shadowType, items, 3, 4))
+	{
+		resetTimers();
+	}
 	ImGui::SliderFloat("Split scheme weight", &renderOptions.pssmShadowsSplitSchemeWeight, 0.0f, 1.0f);
 	ImGui::Checkbox("Visualize shadow map", &m_displayOptions.debugVisualizeShadowMap);
 	ImGui::Checkbox("Show shadow maps", &m_displayOptions.debugDrawShadowMap);
 	if (ImGui::Checkbox("Limit FPS", &m_limitFps))
 	{
 		glfwSwapInterval(m_limitFps ? 1 : 0);
+		resetTimers();
 	}
 	ImGui::SliderFloat("zNear", &m_mainCameraNear, 0.1f, 100.0f);
 	ImGui::SliderFloat("zFar", &m_mainCameraFar, 10.0f, 1000.0f);
@@ -150,16 +162,58 @@ void SimpleApplication::onDisplay()
 		m_shadowCascadeCount = std::max(1, std::min(m_shadowCascadeCount, 8));
 		renderOptions.shadowCascadesCount = m_shadowCascadeCount;
 		m_secondRenderTarget->getRenderOptions().shadowCascadesCount = m_shadowCascadeCount;
+		resetTimers();
 	}
 	if (ImGui::InputInt("Shadow map resolution", &m_shadowResolution, 256, 1024))
 	{
 		renderOptions.shadowResolution = m_shadowResolution;
+		resetTimers();
 	}
 	ImGui::InputFloat("Shadow bias", &renderOptions.shadowBias, 0.00001f, 0.00005f, "%.07f");
 
-	ImGui::Text(std::to_string(m_scene->m_lighting->m_shadowSunLight.m_shadowMap->m_cpuUpdateTime).c_str());
+	// Profiling
+	ImGui::Separator();
+	ImGui::Checkbox("Enable profiling", &renderOptions.profilingEnabled);
+	ImGui::Text("TIMERS (samples %u)", m_scene->m_cpuTimer.getCounter());
+	auto const totalCpuTime = m_scene->m_cpuTimer.getAverage();
+	auto const totalGpuTime = m_scene->m_gpuTimer.getAverage();
+	auto const combinedTime = (totalCpuTime + totalGpuTime) / 1000.f;
+	ImGui::Text("Combined time: %0.3f ms", combinedTime);
+
+	ImGui::Separator();
+
+	ImGui::Text("Frame time CPU: %u (%0.3f ms)", totalCpuTime, totalCpuTime / 1000.f);
+	auto time = m_scene->m_shadowUpdateTimer.getAverage();
+	ImGui::Text(" * %s: %u (%.2f%%)", "Shadow volume update (CPU)", time, float(time) / totalCpuTime * 100.0f);
+
+	ImGui::Separator();
+
+	ImGui::Text("Frame time GPU: %u (%0.3f ms)", totalGpuTime, totalGpuTime / 1000.f);
+
+	time = m_scene->m_shadowMapRenderTimer.getAverage();
+	ImGui::Text(" * %s: %u (%.2f%%)", "Shadow map render", time, float(time) / totalGpuTime * 100.0f);
+
+	time = m_scene->m_renderTimer.getAverage();
+	ImGui::Text(" * %s: %u (%.2f%%)", "Scene render", time, float(time) / totalGpuTime * 100.0f);
+
+	if (ImGui::Button("Reset timers"))
+	{
+		resetTimers();
+	}
+
+
+//	ImGui::Text(std::to_string(m_scene->m_lighting->m_shadowSunLight.m_shadowMap->m_cpuUpdateTime).c_str());
 
 	ImGui::End();
+}
+
+void SimpleApplication::resetTimers()
+{
+	m_scene->m_gpuTimer.reset();
+	m_scene->m_cpuTimer.reset();
+	m_scene->m_shadowUpdateTimer.reset();
+	m_scene->m_shadowMapRenderTimer.reset();
+	m_scene->m_renderTimer.reset();
 }
 
 void SimpleApplication::onUpdate(float dt)
@@ -178,6 +232,9 @@ void SimpleApplication::onUpdate(float dt)
 
 void SimpleApplication::onExit()
 {
+	// Dispose of scene
+	m_scene.reset();
+
 	// Dispose of render targets
 	m_renderTarget.reset();
 	m_secondRenderTarget.reset();

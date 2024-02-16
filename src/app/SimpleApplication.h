@@ -20,7 +20,7 @@ class SimpleApplication : public Dengine::Application
 	bool m_limitFps{true};
 
 	float m_mainCameraNear = 1.5f;
-	float m_mainCameraFar = 500.0f;
+	float m_mainCameraFar = 650.0f;
 
 	int m_shadowResolution = 2048;
 	int m_shadowCascadeCount = 4;
@@ -32,4 +32,5 @@ class SimpleApplication : public Dengine::Application
 	void onDisplay() override;
 	void onUpdate(float dt) override;
 	void onExit() override;
+	void resetTimers();
 };
