@@ -2,6 +2,7 @@
 
 layout (location = 0) out vec4 FragColor;
 
+uniform bool u_layered = false;
 uniform int u_layers = 1;
 uniform sampler2DArray sourceLayered;
 uniform sampler2D source;
@@ -19,7 +20,7 @@ void main()
 	const float step = 0.1;
 	float aspect = u_resolution.y / u_resolution.x;
 
-	if (u_layers > 1) {
+	if (u_layered) {
 		for (int i = 1; i < u_layers + 1; i++) {
 			if (uv.x < step * i && uv.y * aspect < step) {
 				float cX = map(uv.x, step * (i-1), step * i, 0., 1.);

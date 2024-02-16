@@ -53,7 +53,7 @@ void MainScene::init()
 {
 	Scene::init();
 
-	srand(4);
+	srand(6);
 
 	m_orbitCamera->setFov(90.f);
 	m_orbitCamera->setRotationX(60);

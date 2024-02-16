@@ -472,8 +472,8 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 
 				auto layeredShadowMapDisplayShader = Shaders::instance().getShaderPtr<LayeredShadowMapDisplayShader>();
 				layeredShadowMapDisplayShader->use();
-				layeredShadowMapDisplayShader->m_layers =
-				    renderOptions.shadowType == RenderOptions::ShadowType::REGULAR ? 1 : renderOptions.shadowCascadesCount;
+				layeredShadowMapDisplayShader->m_layered = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
+				layeredShadowMapDisplayShader->m_layers = renderOptions.shadowCascadesCount;
 				layeredShadowMapDisplayShader->m_sourceTextureId = shadowFBO->getDepthAttachment()->m_id;
 				layeredShadowMapDisplayShader->m_resolution = glm::vec2(width, height);
 				layeredShadowMapDisplayShader->setUniforms();

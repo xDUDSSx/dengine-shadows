@@ -15,13 +15,15 @@ void LayeredShadowMapDisplayShader::init(bool initSuperclass)
 	m_sourceSampler = glGetUniformLocation(m_id, "source");
 	m_layeredSourceSampler = glGetUniformLocation(m_id, "sourceLayered");
 	m_resolutionId = glGetUniformLocation(m_id, "u_resolution");
+	m_layeredLoc = glGetUniformLocation(m_id, "u_layered");
 	m_layersLoc = glGetUniformLocation(m_id, "u_layers");
 }
 
 void LayeredShadowMapDisplayShader::setUniforms()
 {
+	glUniform1i(m_layeredLoc, m_layered);
 	glUniform1i(m_layersLoc, m_layers);
-	if (m_layers > 1)
+	if (m_layered)
 	{
 		bindTexture2DArray(5, m_sourceTextureId, m_layeredSourceSampler);
 	}
