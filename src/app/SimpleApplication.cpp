@@ -130,8 +130,12 @@ void SimpleApplication::onDisplay()
 	ImGui::End();
 
 	ImGui::Begin("Control panel", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	glm::vec3 cameraPos = m_scene->m_orbitCamera->getPosition();
+	auto& mainCamera = m_scene->m_orbitCamera;
+	glm::vec3 cameraPos = mainCamera->getPosition();
 	ImGui::Text("Camera position: %f, %f, %f", cameraPos.x, cameraPos.y, cameraPos.z);
+	ImGui::Text("Camera rotation: %f, %f", mainCamera->getRotationX(), mainCamera->getRotationY());
+	ImGui::Text("Camera pivot: %f, %f, %f", mainCamera->getPivot().x, mainCamera->getPivot().y, mainCamera->getPivot().z);
+	ImGui::Text("Camera radius: %f", mainCamera->getRadius());
 	if (ImGui::SliderAngle("Sun spin", &m_scene->m_sunSpin))
 	{
 		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), m_scene->m_sunSpin, glm::vec3(0, 1, 0));

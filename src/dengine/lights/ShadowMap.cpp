@@ -218,7 +218,8 @@ void ShadowMap::computeTightShadowFrustum(AbstractCamera& camera, Scene& scene)
 		auto tightNearFar = findTightNearAndFarPlanes(camera.getPosition(), camera.getDirection(), m_receivers);
 		// Ensure that the tight near and far planes stay within original range, and that far is greater than near
 		m_zNearTight = std::max(tightNearFar.first, camera.getZNear());
-		m_zFarTight = std::max(tightNearFar.second, m_zNearTight + 0.01f);
+		m_zFarTight = std::min(tightNearFar.second, camera.getZFar());
+		m_zFarTight = std::max(m_zFarTight, m_zNearTight + 0.01f);
 		glm::mat4 tightProjection = AbstractCamera::createProjectionMatrix(camera.getWidth(), camera.getHeight(), camera.getFov(),
 		                                                                   m_zNearTight, m_zFarTight, true);
 		m_tightCameraFrustum = GfxUtils::unprojectMatrix(tightProjection * camera.getView());
