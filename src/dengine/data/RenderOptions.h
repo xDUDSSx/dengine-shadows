@@ -30,6 +30,7 @@ class RenderOptions
 	int lightingModel;
 	bool shadows;
 	RenderOptions::ShadowType shadowType;
+	int shadowCascadesCount;
 	float pssmShadowsSplitSchemeWeight;
 	int shadowResolution;
 	float shadowBias;

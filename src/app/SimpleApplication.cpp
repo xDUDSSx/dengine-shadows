@@ -140,6 +140,12 @@ void SimpleApplication::onDisplay()
 	m_scene->m_orbitCamera->setZNear(m_mainCameraNear);
 	m_scene->m_orbitCamera->setZFar(m_mainCameraFar);
 
+	if (ImGui::InputInt("Shadow map cascades", &m_shadowCascadeCount, 1, 1))
+	{
+		m_shadowCascadeCount = std::max(1, std::min(m_shadowCascadeCount, 8));
+		renderOptions.shadowCascadesCount = m_shadowCascadeCount;
+		m_secondRenderTarget->getRenderOptions().shadowCascadesCount = m_shadowCascadeCount;
+	}
 	if (ImGui::InputInt("Shadow map resolution", &m_shadowResolution, 256, 1024))
 	{
 		renderOptions.shadowResolution = m_shadowResolution;

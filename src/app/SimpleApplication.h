@@ -23,6 +23,7 @@ class SimpleApplication : public Dengine::Application
 	float m_mainCameraFar = 500.0f;
 
 	int m_shadowResolution = 2048;
+	int m_shadowCascadeCount = 4;
 
 	SimpleApplication();
 

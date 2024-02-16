@@ -42,3 +42,4 @@ build.ninja
 
 # Custom
 bin
+imgui.ini

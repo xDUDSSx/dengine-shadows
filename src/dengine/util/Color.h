@@ -20,6 +20,7 @@ struct Color final
 	static glm::vec3 LIGHT_BLUE;
 	static glm::vec3 ORANGE;
 	static glm::vec3 BROWN;
+	static glm::vec3 PURPLE;
 
 	static glm::vec3 getColor(const float r, const float g, const float b)
 	{

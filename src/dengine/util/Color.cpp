@@ -14,3 +14,4 @@ glm::vec3 Color::MAGENTA = glm::vec3(1.0f, 0.0f, 1.0f);
 glm::vec3 Color::LIGHT_BLUE = glm::vec3(0.0f, 0.4f, 0.65f);
 glm::vec3 Color::ORANGE = glm::vec3(1.0f, 0.5f, 0.0f);
 glm::vec3 Color::BROWN = glm::vec3(0.5f, 0.2f, 0.0f);
+glm::vec3 Color::PURPLE = glm::vec3(0.5f, 0.2f, 1.0f);

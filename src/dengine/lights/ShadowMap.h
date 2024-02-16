@@ -9,8 +9,6 @@
 #include "dengine/framebuffer/DepthAttachment.h"
 #include "dengine/data/DisplayOptions.h"
 
-#define PSSM_CASCADES 4
-
 namespace Dg
 {
 class Scene;
@@ -48,7 +46,7 @@ class ShadowMap
 	Frustum m_tightCameraFrustum;
 	BoundingBox m_tightCameraFrustumAABB;
 
-	int m_splitCount{PSSM_CASCADES};
+	int m_splitCount{4};
 	std::vector<Frustum> m_splitFrustums;
 	std::vector<BoundingBox> m_splitFrustumsAABBs;
 	std::vector<float> m_splitPositions;
@@ -66,9 +64,9 @@ class ShadowMap
 	 */
 	void setupShadowVolume(const glm::vec3& origin, const glm::vec3& target, float width, float zNear, float zFar);
 
-	void update(RenderOptions::ShadowType shadowType, Scene& scene, AbstractCamera& camera);
+	void update(RenderOptions::ShadowType shadowType, int cascadeCount, Scene& scene, AbstractCamera& camera);
 
-	Ptr<Framebuffer> createShadowFramebuffer(RenderOptions::ShadowType shadowType, int resolution);
+	Ptr<Framebuffer> createShadowFramebuffer(RenderOptions::ShadowType shadowType, int cascades, int resolution);
 
 	void drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions, const DisplayOptions& displayOptions);
 

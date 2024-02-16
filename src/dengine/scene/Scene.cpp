@@ -52,29 +52,43 @@ void Scene::renderShadowMap(SceneRenderTarget& renderTarget, const DisplayOption
 	const RenderOptions& renderOptions = renderTarget.getRenderOptions();
 	Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
 
+	bool recreatePSSMShadowMap = false;
+	bool recreateRegularShadowMap = false;
+
 	// Check for shadow map type changes
+	bool wantsToUsePSSM = renderOptions.shadowType != Dg::RenderOptions::ShadowType::REGULAR;
+	bool wasUsingPSSM = shadowMap->m_shadowType != Dg::RenderOptions::ShadowType::REGULAR;
 	if (shadowMap->m_shadowType != renderOptions.shadowType)
 	{
-		bool wasUsingPSSM = shadowMap->m_shadowType != Dg::RenderOptions::ShadowType::REGULAR;
-		bool wantsToUsePSSM = renderOptions.shadowType != Dg::RenderOptions::ShadowType::REGULAR;
 		if (wasUsingPSSM != wantsToUsePSSM)
 		{
-			// Recreate the shadow map fbo
-			Ptr<Framebuffer> newShadowFBO =
-			    shadowMap->createShadowFramebuffer(renderOptions.shadowType, renderOptions.shadowResolution);
-			renderTarget.removeFramebuffer("shadows");
-			renderTarget.addFramebuffer("shadows", newShadowFBO);
-
-			// Reload phong shader with or without the PSSM define
-			auto* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
-			Shaders::reloadShader(*phongShader, phongShader->m_vertSource, phongShader->m_fragSource, phongShader->m_geoSource,
-			                      wantsToUsePSSM ? "#define PSSM" : "");
+			recreatePSSMShadowMap = wantsToUsePSSM;
+			recreateRegularShadowMap = !wantsToUsePSSM;
 		}
+	}
+
+	if ((wantsToUsePSSM && shadowMap->m_splitCount != renderOptions.shadowCascadesCount))
+	{
+		recreatePSSMShadowMap = true;
+	}
+
+	if (recreateRegularShadowMap || recreatePSSMShadowMap)
+	{
+		// Recreate the shadow map fbo
+		Ptr<Framebuffer> newShadowFBO = shadowMap->createShadowFramebuffer(
+		    renderOptions.shadowType, renderOptions.shadowCascadesCount, renderOptions.shadowResolution);
+		renderTarget.removeFramebuffer("shadows");
+		renderTarget.addFramebuffer("shadows", newShadowFBO);
+
+		// Reload phong shader with or without the PSSM define
+		auto* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
+		Shaders::reloadShader(*phongShader, phongShader->m_vertSource, phongShader->m_fragSource, phongShader->m_geoSource,
+		                      recreatePSSMShadowMap ? "#define PSSM" : "");
 	}
 
 	// Update shadow maps
 	shadowMap->m_splitSchemeWeight = renderOptions.pssmShadowsSplitSchemeWeight;
-	shadowMap->update(renderOptions.shadowType, *this, *m_camera);
+	shadowMap->update(renderOptions.shadowType, renderOptions.shadowCascadesCount, *this, *m_camera);
 	// Draw shadow maps
 	shadowMap->drawShadowBuffer(renderTarget.getFramebuffer("shadows"), renderOptions, displayOptions);
 }
@@ -120,15 +134,14 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 		selectionFBO->setMultisampled(multisample, samples);
 	}
 
-	//	glm::mat4 lightMatrix{1.0f}; // TODO: Remove
-	//	glm::vec3 lightPos{1.0f};
-
 	// Draw the scene
 	if (renderOptions.wboit)
 	{
 		////////
 		// Weighted Blended Order Independent Transparency render (OpenGL 3 compatible)
 		////////
+
+		// TODO: WBOIT DOES NOT SUPPORT SHADOWS CURRENTLY !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 		// ### 1. Draw opaque objects into a regular texture
 		mainFBO->start(width, height);
@@ -285,9 +298,10 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			PhongShader* phongShader = Shaders::instance().getShaderPtr<PhongShader>();
 			phongShader->m_lightingModel = static_cast<PhongShader::LightingModel>(renderOptions.lightingModel);
 			// Assign the rendered shadow map texture to phong shader
-			phongShader->m_visualizeShadowMap = displayOptions.debugVisualizeShadowMap;
-			phongShader->m_shadowBias = renderOptions.shadowBias;
 			phongShader->m_isUsingPSSM = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
+			phongShader->m_shadowCascadeCount = renderOptions.shadowCascadesCount;
+			phongShader->m_shadowBias = renderOptions.shadowBias;
+			phongShader->m_visualizeShadowMap = displayOptions.debugVisualizeShadowMap;
 			phongShader->use();
 			m_lighting->setUniforms(*phongShader);
 			if (renderOptions.shadows)
@@ -375,6 +389,7 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 			renderSortedTransparentEntities(view, projection, m_explicitTransparencyOrderEntitiesLast);
 		}
 
+		// Render additional shadow debug visuals if desired
 		if (displayOptions.showDebug)
 		{
 			Ptr<ShadowMap> shadowMap = m_lighting->m_shadowSunLight.m_shadowMap;
@@ -382,17 +397,17 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 
 			DebugDraw::drawLineBox(GfxUtils::g_ndcPoints, Color::GREEN, view, projection);
 
-			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, glm::vec3(0.7f, 0.3f, 0.1f), view, projection);
+			DebugDraw::drawLineBox(shadowMap->m_cameraFrustum.m_corners, glm::vec3(0.47f, 0.17f, 0.46f), view, projection);
 			if (displayOptions.showDebugFrustumAABBs)
 				DebugDraw::drawLineBox(shadowMap->m_cameraFrustumAABB, Color::ORANGE, view, projection);
 			DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustum.m_corners, Color::MAGENTA, view, projection);
 			if (displayOptions.showDebugFrustumAABBs)
 				DebugDraw::drawLineBox(shadowMap->m_tightCameraFrustumAABB, Color::WHITE, view, projection);
 
-			const glm::vec3 colors[] = {Color::GREEN, Color::YELLOW, Color::RED, Color::BLUE};
+			const glm::vec3 colors[] = {Color::GREEN, Color::YELLOW, Color::ORANGE, Color::RED, Color::TEAL, Color::BLUE, Color::MAGENTA, Color::PURPLE };
 			if (renderOptions.shadowType != RenderOptions::ShadowType::REGULAR)
 			{
-				for (int i = 0; i < PSSM_CASCADES; i++)
+				for (int i = 0; i < renderOptions.shadowCascadesCount; i++)
 				{
 					if (displayOptions.showDebugFrustums)
 						DebugDraw::drawLineBox(shadowMap->m_splitFrustums[i].m_corners, colors[i] - glm::vec3(0.18f), view,
@@ -448,7 +463,8 @@ void Scene::draw(int width, int height, glm::mat4 view, glm::mat4 projection, Sc
 
 				auto layeredShadowMapDisplayShader = Shaders::instance().getShaderPtr<LayeredShadowMapDisplayShader>();
 				layeredShadowMapDisplayShader->use();
-				layeredShadowMapDisplayShader->m_layered = renderOptions.shadowType != RenderOptions::ShadowType::REGULAR;
+				layeredShadowMapDisplayShader->m_layers =
+				    renderOptions.shadowType == RenderOptions::ShadowType::REGULAR ? 1 : renderOptions.shadowCascadesCount;
 				layeredShadowMapDisplayShader->m_sourceTextureId = shadowFBO->getDepthAttachment()->m_id;
 				layeredShadowMapDisplayShader->m_resolution = glm::vec2(width, height);
 				layeredShadowMapDisplayShader->setUniforms();
@@ -723,8 +739,8 @@ Ptr<SceneRenderTarget> Scene::createRenderTarget(const RenderOptions& options)
 
 	if (options.shadows)
 	{
-		Ptr<Framebuffer> shadowFBO =
-		    m_lighting->m_shadowSunLight.m_shadowMap->createShadowFramebuffer(options.shadowType, options.shadowResolution);
+		Ptr<Framebuffer> shadowFBO = m_lighting->m_shadowSunLight.m_shadowMap->createShadowFramebuffer(
+		    options.shadowType, options.shadowCascadesCount, options.shadowResolution);
 		renderTarget->addFramebuffer("shadows", shadowFBO);
 	}
 

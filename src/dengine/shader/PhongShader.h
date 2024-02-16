@@ -35,6 +35,7 @@ protected:
 
 	// Shadow mapping
 	GLint m_shadowMapLoc; // TODO: Add support for multiple shadow samplers
+	GLint m_shadowCascadeCountLoc;
 
 	GLint m_visualizeShadowMapLoc;
 	GLint m_shadowBiasLoc;
@@ -45,7 +46,7 @@ public:
 	glm::vec3 m_tint{1.0f};
 	LightingModel m_lightingModel{BLINN_PHONG};
 	GLuint m_shadowMapId;
-
+	int m_shadowCascadeCount = 4;
 	bool m_isUsingPSSM = true;
 	bool m_visualizeShadowMap = true;
 	float m_shadowBias = 0.001f;

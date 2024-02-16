@@ -4,9 +4,9 @@ layout (location = 0) in vec3 aPos;
 
 uniform mat4 pvmMatrix;
 
-const int splitCount = 4;
+#define PSSM_MAX_CASCADES 8
 
-uniform mat4 u_croppedMatrix[splitCount];
+uniform mat4 u_croppedMatrix[PSSM_MAX_CASCADES];
 
 uniform int u_splitBegin;
 uniform int u_splitEnd; // TODO: Unused remove

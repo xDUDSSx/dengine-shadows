@@ -1,11 +1,13 @@
 #version 330 core
 
 layout (triangles) in;
-layout (triangle_strip, max_vertices = 15) out;
+layout (triangle_strip, max_vertices = 30) out;
 
-const int splitCount = 4;
+#define PSSM_MAX_CASCADES 8
 
-uniform mat4 u_croppedMatrix[splitCount];
+uniform int u_splitCount;
+
+uniform mat4 u_croppedMatrix[PSSM_MAX_CASCADES];
 
 uniform int u_splitBegin;
 uniform int u_splitEnd;

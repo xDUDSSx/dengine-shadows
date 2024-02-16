@@ -2,13 +2,11 @@
 
 layout (location = 0) out vec4 FragColor;
 
-#define PSSM_CASCADES 4
-
+uniform int u_layers = 1;
 uniform sampler2DArray sourceLayered;
 uniform sampler2D source;
 
 uniform vec2 u_resolution;
-uniform bool u_layered;
 
 float map(float value, float min1, float max1, float min2, float max2) {
 	return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
@@ -21,8 +19,8 @@ void main()
 	const float step = 0.1;
 	float aspect = u_resolution.y / u_resolution.x;
 
-	if (u_layered) {
-		for (int i = 1; i < PSSM_CASCADES + 1; i++) {
+	if (u_layers > 1) {
+		for (int i = 1; i < u_layers + 1; i++) {
 			if (uv.x < step * i && uv.y * aspect < step) {
 				float cX = map(uv.x, step * (i-1), step * i, 0., 1.);
 				float cY = map(uv.y, 0., step, 0., 1.);

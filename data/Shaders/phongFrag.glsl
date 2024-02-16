@@ -103,7 +103,9 @@ uniform int spotLightsCount;
 uniform SpotLight spotLights[MAX_SPOT_LIGHTS];
 
 // Shadow mapping
+#define PSSM_MAX_CASCADES 8
 #ifdef PSSM
+uniform int u_shadowCascadeCount;
 uniform sampler2DArray u_shadowMap;
 #else
 uniform sampler2D u_shadowMap;
@@ -117,9 +119,8 @@ struct ShadowSunLight {
 	vec3 specular;
 
 #ifdef PSSM
-#define PSSM_CASCADES 4
-	mat4 lightPvms[PSSM_CASCADES];
-	float splitPlanes[PSSM_CASCADES];
+	mat4 lightPvms[PSSM_MAX_CASCADES];
+	float splitPlanes[PSSM_MAX_CASCADES];
 #else
 	mat4 lightPvm;
 #endif
@@ -271,7 +272,7 @@ vec3 calculateSunLight(SunLight light, Material material, vec3 fragPos, vec3 nor
     return light.intensity * (ambientLight + diffuseLight + specularLight);
 }
 
-const vec3 splitColors[4] = vec3[4](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0., 0.), vec3(0., 0., 1.));
+const vec3 splitColors[PSSM_MAX_CASCADES] = vec3[PSSM_MAX_CASCADES](vec3(0., 1., 0.), vec3(1., 1., 0.), vec3(1., 0.5, 0.), vec3(1., 0., 0.), vec3(0., 1., 1.), vec3(0., 0., 1.), vec3(1., 0., 1.), vec3(0.5, 0.2, 1.));
 
 vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragPos, vec3 normal, vec3 tangent, vec3 binormal) {
 	if (light.intensity <= 0) {
@@ -297,7 +298,7 @@ vec3 calculateSunLightShadow(ShadowSunLight light, Material material, vec3 fragP
 	float shadow = 0.0;
 #ifdef PSSM
 	float fragDistance = -FragPos.z;
-	for (int i = 0; i < PSSM_CASCADES; i++)
+	for (int i = 0; i < u_shadowCascadeCount; i++)
 	{
 		if (fragDistance < light.splitPlanes[i])
 		{

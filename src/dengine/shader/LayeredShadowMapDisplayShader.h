@@ -12,11 +12,11 @@ class LayeredShadowMapDisplayShader : public Shader
 	GLint m_layeredSourceSampler;
 
 	GLint m_resolutionId;
-	GLint m_layeredLoc;
+	GLint m_layersLoc;
 
   public:
 	GLuint m_sourceTextureId{0};
-	bool m_layered{false};
+	int m_layers{1};
 
 	glm::vec2 m_resolution{glm::vec2(1.0f)};
 

@@ -53,6 +53,8 @@ void MainScene::init()
 {
 	Scene::init();
 
+	srand(4);
+
 	m_orbitCamera->setFov(90.f);
 	m_orbitCamera->setRotationX(60);
 	m_orbitCamera->setZFar(360.0f);

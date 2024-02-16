@@ -48,7 +48,7 @@ Frustum createSplitFrustum(float zNear, float zFar, const AbstractCamera& camera
 	return GfxUtils::unprojectMatrix(splitProjection * camera.getView());
 }
 
-Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType, int resolution)
+Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType, int cascades, int resolution)
 {
 	m_shadowType = shadowType;
 	// TODO: Shadow type switching
@@ -68,7 +68,7 @@ Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType, int r
 	{
 		auto d = DepthAttachment(false, 100, 100, false);
 		d.m_use2DTextureArray = true;
-		d.m_2DTextureArrayLayers = PSSM_CASCADES;
+		d.m_2DTextureArrayLayers = cascades;
 		d.m_minFilter = GL_NEAREST;
 		d.m_magFilter = GL_NEAREST;
 		d.m_textureWrapS = GL_CLAMP_TO_BORDER;
@@ -80,11 +80,13 @@ Ptr<Framebuffer> ShadowMap::createShadowFramebuffer(ShadowType shadowType, int r
 	return shadowFBO;
 }
 
-void ShadowMap::update(ShadowType shadowType, Scene& scene, AbstractCamera& camera)
+void ShadowMap::update(ShadowType shadowType, int cascadeCount, Scene& scene, AbstractCamera& camera)
 {
 	// TODO: Refactoring, some functions work with member state which is a mess
 
 	// Assuming all GameObjects have up to date aabb bounding boxes!
+
+	m_splitCount = cascadeCount;
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -298,6 +300,8 @@ std::pair<float, float> ShadowMap::findTightNearAndFarPlanes(const glm::vec3& or
 void ShadowMap::drawShadowBuffer(WPtr<Framebuffer> shadowFBOPtr, const RenderOptions& renderOptions,
                                  const DisplayOptions& displayOptions)
 {
+	// Assuming the passed shadowFBO contains textures setup according to the shadow map state
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glDepthMask(GL_TRUE);

@@ -17,13 +17,12 @@ void ShadowSunLight::setUniforms(const PhongShader& shader, int index) const
 	glUniform3fv(glGetUniformLocation(shader.m_id, (prefix + ".direction").c_str()), 1, glm::value_ptr(direction));
 
 	// TODO: Turn into a UBO probably, avoid calling glGetUniform all the time
+	// Using a UBO would also solve the dynamic cascade cout memory overhead
 
 	if (m_shadowMap->m_shadowType == Dg::RenderOptions::ShadowType::REGULAR)
 	{
 		glm::mat4 lightPvmCropped = m_shadowMap->m_lightPvmMatrices[0];
 		GLint lightPvmLoc = glGetUniformLocation(shader.m_id, (prefix + ".lightPvm").c_str());
-		//		LOG_INFO("Setting uniform '{}' at location {} to value {}", (prefix + ".lightPvm"), lightPvmLoc,
-		//glm::to_string(lightPvmCropped));
 		glUniformMatrix4fv(lightPvmLoc, 1, GL_FALSE, glm::value_ptr(lightPvmCropped));
 	}
 	else
