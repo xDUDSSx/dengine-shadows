@@ -16,7 +16,7 @@ class SimpleApplication : public Dengine::Application
 
 	bool m_secondaryWindowHovered{false};
 //	Dg::RenderOptions::ShadowType m_shadowType{Dg::RenderOptions::ShadowType::PSSM_INSTANCED};
-	int m_shadowType{static_cast<int>(Dg::RenderOptions::ShadowType::PSSM_INSTANCED)};
+	int m_shadowType{static_cast<int>(Dg::RenderOptions::ShadowType::PSSM_GEO)};
 	bool m_limitFps{true};
 
 	float m_mainCameraNear = 1.5f;

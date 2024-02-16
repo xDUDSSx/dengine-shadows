@@ -30,7 +30,8 @@ bool Shaders::load()
 	ok &= createShader<ColorShader>("Data/Shaders/colorVert.glsl", "Data/Shaders/colorFrag.glsl");
 	ok &= createShader<DepthShader>("Data/Shaders/depthVert.glsl", "");
 	ok &= createShader<PSSMShader>("Data/Shaders/depthVert.glsl", "", "Data/Shaders/pssmGeo.glsl");
-	ok &= createShader<PSSMInstancingShader>("Data/Shaders/pssmInstancingVert.glsl", "", "Data/Shaders/pssmInstancingGeo.glsl");
+	ok &= createShader<PSSMInstancingShader>("Data/Shaders/pssmInstancingVert.glsl", "", "");
+	//ok &= createShader<PSSMInstancingShader>("Data/Shaders/pssmInstancingVert.glsl", "", "Data/Shaders/pssmInstancingGeo.glsl");
 	ok &= createShader<ShadowShader>("Data/Shaders/shadowVert.glsl", "Data/Shaders/shadowFrag.glsl");
 	ok &= createShader<GridShader>("Data/Shaders/gridVert.glsl", "Data/Shaders/gridFrag.glsl");
 	ok &= createShader<WBOITCompositeShader>("Data/Shaders/basicVert.glsl", "Data/Shaders/wboitCompositeFrag.glsl");

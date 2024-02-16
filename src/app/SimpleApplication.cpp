@@ -13,6 +13,11 @@ SimpleApplication::SimpleApplication() : Application("Dengine") {}
 
 bool SimpleApplication::onInit()
 {
+	// Required for instanced PSSM
+	if (!glfwExtensionSupported("GL_AMD_vertex_shader_layer")) {
+		LOG_ERROR("Extension 'GL_AMD_vertex_shader_layer' is not supported on this hardware!");
+	}
+
 	// Load shaders
 	Dg::Shaders::instance().load();
 

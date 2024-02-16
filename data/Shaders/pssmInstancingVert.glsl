@@ -1,5 +1,7 @@
 #version 330 core
 
+#extension GL_AMD_vertex_shader_layer : require
+
 layout (location = 0) in vec3 aPos;
 
 uniform mat4 pvmMatrix;
@@ -18,4 +20,5 @@ void main()
 	int splitIndex = u_splitBegin + gl_InstanceID;
 	gl_Position = u_croppedMatrix[splitIndex] * pvmMatrix * vec4(aPos, 1.0);
 	vSplitIndex = splitIndex;
+	gl_Layer = splitIndex;
 }
