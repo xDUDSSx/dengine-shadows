@@ -42,6 +42,9 @@ bool SimpleApplication::onInit()
 	renderOptions.shadowType = static_cast<Dg::RenderOptions::ShadowType>(m_shadowType);
 	renderOptions.shadowResolution = m_shadowResolution;
 	renderOptions.profilingEnabled = true;
+
+	renderOptions.pssmShadowsSplitSchemeWeight = 0.6f;
+
 	if (!m_renderTarget)
 	{
 		m_renderTarget = m_scene->createRenderTarget(renderOptions);
@@ -64,6 +67,8 @@ bool SimpleApplication::onInit()
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	glfwSwapInterval(m_limitFps ? 1 : 0);
 
 	return true;
 }
